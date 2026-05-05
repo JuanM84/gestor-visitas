@@ -1,0 +1,95 @@
+import { Request, Response } from 'express';
+import { VisitaService } from '../services/visita.service';
+
+export const VisitaController = {
+    async getVisitasDashboard(req: Request, res: Response) {
+        try {
+            // Extraemos la fecha de los query params (ej: /api/visitas?fecha=2026-04-28)
+            const fecha = req.query.fecha as string || new Date().toISOString().split('T')[0];
+
+            if (!fecha) {
+                return res.status(400).json({ error: 'El parámetro fecha es requerido' });
+            }
+
+            const visitas = await VisitaService.obtenerVisitasDelDia(fecha);
+
+            res.status(200).json({
+                fecha,
+                total: visitas.length,
+                data: visitas
+            });
+
+        } catch (error: any) {
+            console.error('Error en getVisitasDashboard:', error.message);
+            res.status(500).json({ error: error.message || 'Error interno del servidor' });
+        }
+    },
+    async crearVisita(req: Request, res: Response) {
+        try {
+            // req.body contiene todo el JSON que enviará el frontend
+            const datosVisita = req.body;
+
+            const nuevaVisitaId = await VisitaService.registrarNuevaVisita(datosVisita);
+
+            res.status(201).json({
+                mensaje: 'Visita registrada con éxito',
+                visita_id: nuevaVisitaId
+            });
+
+        } catch (error: any) {
+            console.error('Error en crearVisita:', error.message);
+            res.status(400).json({ error: error.message || 'Error al procesar la solicitud' });
+        }
+    },
+    async getHistorial(req: Request, res: Response) {
+        try {
+            const historial = await VisitaService.obtenerHistorial();
+            res.status(200).json(historial);
+        } catch (error: any) {
+            res.status(500).json({ error: 'Error al obtener el historial de visitas' });
+        }
+    },
+    async getCalendario(req: Request, res: Response) {
+        try {
+            // Tomamos el mes y año de la URL (ej: ?anio=2026&mes=5)
+            const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
+            const mes = parseInt(req.query.mes as string) || (new Date().getMonth() + 1);
+
+            const datos = await VisitaService.obtenerDatosCalendario(anio, mes);
+            res.status(200).json(datos);
+        } catch (error: any) {
+            res.status(500).json({ error: 'Error al obtener datos del calendario' });
+        }
+    },
+    async cancelarVisita(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { motivo } = req.body;
+
+            const visita = await VisitaService.cancelarVisita(String(id), motivo);
+            res.status(200).json({ mensaje: 'Visita cancelada exitosamente', visita });
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+    async getById(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const visita = await VisitaService.obtenerPorId(String(id));
+            res.status(200).json(visita);
+        } catch (error: any) {
+            res.status(404).json({ error: error.message });
+        }
+    },
+    async updateVisita(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const datosAActualizar = req.body;
+
+            const visita = await VisitaService.modificarVisita(String(id), datosAActualizar);
+            res.status(200).json({ mensaje: 'Visita modificada exitosamente', visita });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+};

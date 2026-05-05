@@ -1,0 +1,25 @@
+# --- General ---
+node_modules/
+.DS_Store
+Thumbs.db
+
+# --- Backend (Node.js) ---
+backend/node_modules/
+backend/.env
+backend/logs/
+backend/*.log
+backend/npm-debug.log*
+
+# --- Frontend (React) ---
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+frontend/build/
+frontend/dist/
+frontend/.next/
+frontend/npm-debug.log*
+
+# --- Herramientas y Otros ---
+.vscode/
+.idea/
+.env
