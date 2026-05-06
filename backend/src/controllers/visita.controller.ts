@@ -4,7 +4,6 @@ import { VisitaService } from '../services/visita.service';
 export const VisitaController = {
     async getVisitasDashboard(req: Request, res: Response) {
         try {
-            // Extraemos la fecha de los query params (ej: /api/visitas?fecha=2026-04-28)
             const fecha = req.query.fecha as string || new Date().toISOString().split('T')[0];
 
             if (!fecha) {
@@ -24,12 +23,11 @@ export const VisitaController = {
             res.status(500).json({ error: error.message || 'Error interno del servidor' });
         }
     },
+
     async crearVisita(req: Request, res: Response) {
         try {
-            // req.body contiene todo el JSON que enviará el frontend
             const datosVisita = req.body;
-
-            const nuevaVisitaId = await VisitaService.registrarNuevaVisita(datosVisita);
+            const nuevaVisitaId = await VisitaService.registrarNuevaVisita(datosVisita, (req as any).usuario.id);
 
             res.status(201).json({
                 mensaje: 'Visita registrada con éxito',
@@ -41,6 +39,7 @@ export const VisitaController = {
             res.status(400).json({ error: error.message || 'Error al procesar la solicitud' });
         }
     },
+
     async getHistorial(req: Request, res: Response) {
         try {
             const historial = await VisitaService.obtenerHistorial();
@@ -49,18 +48,20 @@ export const VisitaController = {
             res.status(500).json({ error: 'Error al obtener el historial de visitas' });
         }
     },
+
     async getCalendario(req: Request, res: Response) {
         try {
-            // Tomamos el mes y año de la URL (ej: ?anio=2026&mes=5)
             const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
             const mes = parseInt(req.query.mes as string) || (new Date().getMonth() + 1);
 
             const datos = await VisitaService.obtenerDatosCalendario(anio, mes);
             res.status(200).json(datos);
         } catch (error: any) {
+            console.error('ERROR REAL EN CALENDARIO:', error);
             res.status(500).json({ error: 'Error al obtener datos del calendario' });
         }
     },
+
     async cancelarVisita(req: Request, res: Response) {
         try {
             const { id } = req.params;
@@ -72,6 +73,7 @@ export const VisitaController = {
             res.status(500).json({ error: error.message });
         }
     },
+
     async getById(req: Request, res: Response) {
         try {
             const { id } = req.params;
@@ -81,6 +83,7 @@ export const VisitaController = {
             res.status(404).json({ error: error.message });
         }
     },
+
     async updateVisita(req: Request, res: Response) {
         try {
             const { id } = req.params;

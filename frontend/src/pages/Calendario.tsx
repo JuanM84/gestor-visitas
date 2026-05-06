@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom';
 
 export const Calendario = () => {
     const [fechaActual, setFechaActual] = useState(new Date());
-
     const [datosMes, setDatosMes] = useState<Record<number, any>>({});
     const [loading, setLoading] = useState(false);
 
@@ -49,7 +48,6 @@ export const Calendario = () => {
         return { estado: 'disponible', texto: 'Libre', visitas: 0 };
     };
 
-    // Funciones de navegación
     const mesAnterior = () => setFechaActual(new Date(anio, mes - 1, 1));
     const mesSiguiente = () => setFechaActual(new Date(anio, mes + 1, 1));
     const mesActualStr = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(fechaActual);
@@ -67,7 +65,8 @@ export const Calendario = () => {
                         <span className="material-symbols-outlined text-[18px]">print</span>
                         Imprimir Mes
                     </Button>
-                    <Link to="/nueva-visita" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary-container transition-all">
+                    {/* Asegurate de que la ruta del to="" coincida con la que tenés en App.tsx */}
+                    <Link to="/visitas" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary-container transition-all">
                         <span className="material-symbols-outlined text-[18px]">add</span>
                         Agregar Visita
                     </Link>
@@ -75,7 +74,7 @@ export const Calendario = () => {
             </div>
 
             {/* Contenedor Principal del Calendario */}
-            <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant overflow-hidden">
+            <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant overflow-hidden relative">
                 {loading && (
                     <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
                         <span className="animate-spin material-symbols-outlined text-4xl text-primary">sync</span>
@@ -132,7 +131,7 @@ export const Calendario = () => {
                                     <div className="flex justify-between items-start mb-2">
                                         <span className={cn(
                                             "w-8 h-8 flex items-center justify-center rounded-full font-label-md",
-                                            esHoy ? "bg-primary text-on-primary" : "text-on-surface"
+                                            esHoy ? "bg-primary text-white" : "text-on-surface"
                                         )}>
                                             {dia}
                                         </span>
@@ -149,8 +148,9 @@ export const Calendario = () => {
                                         <div className={cn(
                                             "text-[11px] px-2 py-1 rounded font-bold uppercase tracking-wider truncate",
                                             estado === 'lleno' && "bg-error-container text-on-error-container",
-                                            estado === 'parcial' && "bg-[#fff8e1] text-[#b08d00]",
-                                            estado === 'inhabilitado' && "bg-surface-variant text-on-surface-variant"
+                                            estado === 'parcial' && "bg-[#e6f4ea] text-[#137333]",
+                                            estado === 'inhabilitado' && "bg-surface-variant text-on-surface-variant",
+                                            estado === 'disponible' && "bg-surface-container-lowest text-outline border border-dashed border-outline/30" // Diseño sutil para "Libre"
                                         )}>
                                             {texto}
                                         </div>

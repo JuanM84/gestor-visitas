@@ -14,22 +14,89 @@ export const VisitaService = {
         // Aquí podríamos formatear la salida
         return visitas;
     },
-    async registrarNuevaVisita(datosVisita: any) {
-        if (!datosVisita.usuario_registro_id) {
-            throw new Error('Se requiere el ID del usuario que registra la visita.');
+    async registrarNuevaVisita(datos: any, usuarioId: string) {
+        // 1. Validamos que la cantidad de personas sea un número válido
+        const cantidadPersonas = parseInt(datos.visita.cantidad_personas, 10);
+        if (isNaN(cantidadPersonas) || cantidadPersonas <= 0) {
+            throw new Error('La cantidad de personas debe ser un número mayor a cero');
         }
 
-        // Validamos disponibilidad
+        // 2. VALIDACIÓN DE DISPONIBILIDAD (Aforo y Días Inhábiles)
         await AvailabilityService.validarDisponibilidad(
-            datosVisita.visita.fecha,
-            datosVisita.visita.hora_inicio,
-            datosVisita.visita.cantidad_personas
+            datos.visita.fecha,
+            datos.visita.hora_inicio,
+            cantidadPersonas
         );
-        // ---------------------------------------------
 
-        const nuevaVisitaId = await VisitaRepository.crearVisitaTransaccional(datosVisita);
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
 
-        return nuevaVisitaId;
+            let gestorId = datos.gestor_id;
+
+            if (!gestorId && datos.nuevoGestor) {
+                const resGestor = await client.query(
+                    `INSERT INTO Gestor (nombre, tipo, telefono, email, localidad, provincia, pais) 
+                     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+                    [
+                        datos.nuevoGestor.nombre,
+                        datos.nuevoGestor.tipo,
+                        datos.nuevoGestor.telefono,
+                        datos.nuevoGestor.email,
+                        datos.nuevoGestor.localidad,
+                        datos.nuevoGestor.provincia,
+                        datos.nuevoGestor.pais
+                    ]
+                );
+                gestorId = resGestor.rows[0].id;
+            }
+
+            const resGrupo = await client.query(
+                `INSERT INTO Grupo (nombre, tipo, nivel_educativo, descripcion, gestor_id) 
+                 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+                [
+                    datos.grupo.nombre,
+                    datos.grupo.tipo,
+                    datos.grupo.nivel_educativo,
+                    datos.grupo.descripcion,
+                    gestorId
+                ]
+            );
+            const grupoId = resGrupo.rows[0].id;
+
+            const resVisita = await client.query(
+                `INSERT INTO Visita (
+                    gestor_id, usuario_registro_id, grupo_id, 
+                    fecha, hora_inicio, tipo, tiene_cruce_tunel, cantidad_personas, tiene_discapacidad, discapacidad_detalle
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+                [
+                    gestorId,
+                    usuarioId,
+                    grupoId,
+                    datos.visita.fecha,
+                    datos.visita.hora_inicio,
+                    datos.visita.tipo,
+                    datos.visita.tiene_cruce_tunel,
+                    cantidadPersonas,
+                    datos.visita.tiene_discapacidad || false,
+                    datos.visita.discapacidad_detalle || null
+                ]
+            );
+
+            await client.query(
+                `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                [usuarioId, `Registró visita ID ${resVisita.rows[0].id} para el grupo ${datos.grupo.nombre}`]
+            );
+
+            await client.query('COMMIT');
+            return resVisita.rows[0];
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     },
     async obtenerHistorial() {
         return await VisitaRepository.findHistorialCompleto();
@@ -40,10 +107,10 @@ export const VisitaService = {
 
         // 2. NUEVO: Buscamos los días inhábiles de este mes específico
         const queryInhabiles = `
-      SELECT TO_CHAR(fecha, 'YYYY-MM-DD') as fecha_str, descripcion 
-      FROM Dialnhabil 
-      WHERE EXTRACT(YEAR FROM fecha::date) = $1 AND EXTRACT(MONTH FROM fecha::date) = $2
-    `;
+            SELECT TO_CHAR(fecha, 'YYYY-MM-DD') as fecha_str, descripcion 
+            FROM DiaInhabil
+            WHERE EXTRACT(YEAR FROM fecha::date) = $1 AND EXTRACT(MONTH FROM fecha::date) = $2
+        `;
         const resultInhabiles = await pool.query(queryInhabiles, [anio, mes]);
         const diasInhabiles = resultInhabiles.rows;
 

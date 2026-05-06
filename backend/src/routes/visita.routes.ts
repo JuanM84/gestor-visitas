@@ -3,7 +3,6 @@ import { VisitaController } from '../controllers/visita.controller';
 import { verificarToken } from '../middleware/auth.middleware';
 
 const router = Router();
-// ENDPOINTS
 
 // GET /api/visitas?fecha=YYYY-MM-DD
 router.get('/', verificarToken, VisitaController.getVisitasDashboard);
