@@ -20,14 +20,6 @@ export const Navbar = () => {
             </div>
 
             <div className="flex items-center gap-4 text-primary">
-                <button className="p-2 rounded-full hover:bg-slate-50 transition-colors relative">
-                    <span className="material-symbols-outlined">notifications</span>
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
-                </button>
-                <button className="p-2 rounded-full hover:bg-slate-50 transition-colors">
-                    <span className="material-symbols-outlined">help</span>
-                </button>
-
                 {/* Avatar + nombre del usuario */}
                 <div className="flex items-center gap-3 ml-2">
                     <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">

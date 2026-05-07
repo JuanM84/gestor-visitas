@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
 import { Link } from 'react-router-dom';
+import { BADGE_ESTADO } from '../utils/visitaTypes';
 
 export const Calendario = () => {
     const [fechaActual, setFechaActual] = useState(new Date());
@@ -142,6 +143,22 @@ export const Calendario = () => {
                             const esHoy = new Date().getDate() === dia && new Date().getMonth() === mes && new Date().getFullYear() === anio;
                             const isClickable = estado !== 'inhabilitado';
 
+                            // Fecha del día comparada con hoy (sin horas)
+                            const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+                            const esPasado = new Date(anio, mes, dia) < hoy;
+
+                            // Para fechas pasadas: ocultar "Slots Disponibles" y "Libre"
+                            const mostrarBadge = !(esPasado && (estado === 'parcial' || estado === 'disponible'));
+                            const textoBadge   = (esPasado && estado === 'parcial') ? 'Con visitas' : texto;
+                            const estilosBadge = cn(
+                                "text-[11px] px-2 py-1 rounded font-bold uppercase tracking-wider truncate",
+                                estado === 'lleno'       && "bg-error-container text-on-error-container",
+                                estado === 'parcial'     && !esPasado && "bg-[#e6f4ea] text-[#137333]",
+                                estado === 'parcial'     && esPasado  && "bg-surface-container text-outline",
+                                estado === 'inhabilitado'              && "bg-surface-variant text-on-surface-variant",
+                                estado === 'disponible'  && !esPasado && "bg-surface-container-lowest text-outline border border-dashed border-outline/30"
+                            );
+
                             return (
                                 <div
                                     key={dia}
@@ -160,15 +177,11 @@ export const Calendario = () => {
                                         {visitas > 0 && estado !== 'inhabilitado' && (
                                             <div className="text-xs font-medium text-on-surface-variant">{visitas} personas</div>
                                         )}
-                                        <div className={cn(
-                                            "text-[11px] px-2 py-1 rounded font-bold uppercase tracking-wider truncate",
-                                            estado === 'lleno' && "bg-error-container text-on-error-container",
-                                            estado === 'parcial' && "bg-[#e6f4ea] text-[#137333]",
-                                            estado === 'inhabilitado' && "bg-surface-variant text-on-surface-variant",
-                                            estado === 'disponible' && "bg-surface-container-lowest text-outline border border-dashed border-outline/30"
-                                        )}>
-                                            {texto}
-                                        </div>
+                                        {mostrarBadge && (
+                                            <div className={estilosBadge}>
+                                                {textoBadge}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -243,10 +256,24 @@ export const Calendario = () => {
                                                 </div>
 
                                                 <div>
-                                                    <h4 className={cn(
-                                                        "font-bold text-on-surface text-lg",
-                                                        esCancelada && "line-through text-outline"
-                                                    )}>{visita.grupo_nombre}</h4>
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <h4 className={cn(
+                                                            "font-bold text-on-surface text-lg",
+                                                            esCancelada && "line-through text-outline"
+                                                        )}>{visita.grupo_nombre}</h4>
+                                                        {visita.tiene_cruce_tunel && (
+                                                            <span
+                                                                className="material-symbols-outlined text-amber-600 text-[18px]"
+                                                                title="Realiza cruce del túnel"
+                                                            >swap_horiz</span>
+                                                        )}
+                                                        {visita.tiene_discapacidad && (
+                                                            <span
+                                                                className="material-symbols-outlined text-secondary text-[18px]"
+                                                                title="Requiere accesibilidad"
+                                                            >accessible_forward</span>
+                                                        )}
+                                                    </div>
                                                     <p className="text-sm text-on-surface-variant flex items-center gap-1">
                                                         <span className="material-symbols-outlined text-[16px]">domain</span>
                                                         {visita.gestor_nombre}
@@ -260,9 +287,7 @@ export const Calendario = () => {
                                                 </span>
                                                 <span className={cn(
                                                     "text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide",
-                                                    esAgendada  && "text-[#137333] bg-[#e6f4ea]",
-                                                    esCancelada && "text-red-700 bg-red-100",
-                                                    !esAgendada && !esCancelada && "text-outline bg-surface-container"
+                                                    BADGE_ESTADO[visita.estado] ?? 'text-outline bg-surface-container border border-outline-variant'
                                                 )}>
                                                     {visita.estado}
                                                 </span>

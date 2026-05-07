@@ -155,6 +155,9 @@ export const Dashboard = () => {
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h4 className="font-black text-on-surface text-xl">{visita.grupo_nombre}</h4>
+                                                {visita.tiene_cruce_tunel && (
+                                                    <span className="material-symbols-outlined text-amber-600 text-[20px]" title="Realiza cruce del túnel">swap_horiz</span>
+                                                )}
                                                 {visita.tiene_discapacidad && (
                                                     <span className="material-symbols-outlined text-secondary text-[20px]" title="Requiere accesibilidad">accessible_forward</span>
                                                 )}

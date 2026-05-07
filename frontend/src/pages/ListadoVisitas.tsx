@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import * as XLSX from 'xlsx';
 import { cn } from '../utils/cn';
+import { BADGE_ESTADO } from '../utils/visitaTypes';
 
 export const ListadoVisitas = () => {
     const navigate = useNavigate();
@@ -141,9 +142,9 @@ export const ListadoVisitas = () => {
                     <div className="relative">
                         <select className={cn(inputStyles, "appearance-none cursor-pointer")}>
                             <option value="">Todos los estados</option>
-                            <option value="Confirmada">Confirmada</option>
-                            <option value="Pendiente">Pendiente</option>
+                            <option value="Agendada">Agendada</option>
                             <option value="Realizada">Realizada</option>
+                            <option value="Cancelada">Cancelada</option>
                         </select>
                         <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
                     </div>
@@ -179,11 +180,8 @@ export const ListadoVisitas = () => {
                                     </td>
                                     <td className="p-4">
                                         <span className={cn(
-                                            "inline-flex items-center px-2 py-0.5 rounded font-label-sm",
-                                            v.estado === 'Confirmada' ? "bg-primary-container text-on-primary-container" :
-                                                v.estado === 'Realizada' ? "bg-[#e6f4ea] text-[#137333]" :
-                                                    v.estado === 'Cancelada' ? "bg-error-container text-on-error-container" :
-                                                        "bg-surface-variant text-on-surface-variant border border-outline-variant/30"
+                                            "inline-flex items-center px-2 py-1 rounded-full font-label-sm text-xs font-bold uppercase tracking-wide",
+                                            BADGE_ESTADO[v.estado] ?? 'bg-surface-variant text-on-surface-variant border border-outline-variant/30'
                                         )}>
                                             {v.estado}
                                         </span>

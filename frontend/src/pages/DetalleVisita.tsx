@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
+import { BADGE_ESTADO } from '../utils/visitaTypes';
 
 export const DetalleVisita = () => {
     const { id } = useParams();
@@ -105,10 +106,8 @@ export const DetalleVisita = () => {
                                 <div className="flex items-center gap-3 mb-1">
                                     <h2 className="text-3xl font-black text-on-surface">{visita.grupo_nombre}</h2>
                                     <span className={cn(
-                                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
-                                        visita.estado === 'Agendada'  && "bg-sky-100 text-sky-800 border-sky-200",
-                                        visita.estado === 'Cancelada' && "bg-red-100 text-red-700 border-red-200",
-                                        visita.estado !== 'Agendada' && visita.estado !== 'Cancelada' && "bg-surface-container text-on-surface-variant border-outline-variant"
+                                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
+                                        BADGE_ESTADO[visita.estado] ?? 'bg-surface-container text-outline border border-outline-variant'
                                     )}>
                                         {visita.estado}
                                     </span>

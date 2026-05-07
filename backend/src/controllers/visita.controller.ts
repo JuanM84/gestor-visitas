@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { VisitaService } from '../services/visita.service';
+import { esTipoVisitaValido, TIPOS_VISITA, esEstadoVisitaValido, ESTADOS_VISITA } from '../types/visita.types';
 
 export const VisitaController = {
     async getVisitasDashboard(req: Request, res: Response) {
@@ -27,6 +28,15 @@ export const VisitaController = {
     async crearVisita(req: Request, res: Response) {
         try {
             const datosVisita = req.body;
+
+            // Validación temprana del tipo de visita
+            const tipo = datosVisita?.visita?.tipo;
+            if (!tipo || !esTipoVisitaValido(tipo)) {
+                return res.status(400).json({
+                    error: `El tipo de visita es inválido o está ausente. Valores permitidos: ${TIPOS_VISITA.join(', ')}`
+                });
+            }
+
             const nuevaVisitaId = await VisitaService.registrarNuevaVisita(datosVisita, (req as any).usuario.id);
 
             res.status(201).json({
@@ -66,8 +76,9 @@ export const VisitaController = {
         try {
             const { id } = req.params;
             const { motivo } = req.body;
+            const usuarioId = (req as any).usuario.id;
 
-            const visita = await VisitaService.cancelarVisita(String(id), motivo);
+            const visita = await VisitaService.cancelarVisita(String(id), usuarioId, motivo);
             res.status(200).json({ mensaje: 'Visita cancelada exitosamente', visita });
         } catch (error: any) {
             res.status(500).json({ error: error.message });
@@ -88,8 +99,23 @@ export const VisitaController = {
         try {
             const { id } = req.params;
             const datosAActualizar = req.body;
+            const usuarioId = (req as any).usuario.id;
 
-            const visita = await VisitaService.modificarVisita(String(id), datosAActualizar);
+            // Validación del tipo si viene en el payload
+            if (datosAActualizar.tipo !== undefined && !esTipoVisitaValido(datosAActualizar.tipo)) {
+                return res.status(400).json({
+                    error: `Tipo de visita inválido. Valores permitidos: ${TIPOS_VISITA.join(', ')}`
+                });
+            }
+
+            // Validación del estado si viene en el payload
+            if (datosAActualizar.estado !== undefined && !esEstadoVisitaValido(datosAActualizar.estado)) {
+                return res.status(400).json({
+                    error: `Estado inválido. Valores permitidos: ${ESTADOS_VISITA.join(', ')}`
+                });
+            }
+
+            const visita = await VisitaService.modificarVisita(String(id), datosAActualizar, usuarioId);
             res.status(200).json({ mensaje: 'Visita modificada exitosamente', visita });
         } catch (error: any) {
             res.status(400).json({ error: error.message });

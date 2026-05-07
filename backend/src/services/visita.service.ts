@@ -1,6 +1,7 @@
 import { VisitaRepository } from '../repositories/visita.repository';
 import { AvailabilityService } from './disponibilidad.service';
 import { pool } from '../config/db';
+import { esTipoVisitaValido, TIPOS_VISITA, esEstadoVisitaValido, ESTADOS_VISITA } from '../types/visita.types';
 
 export const VisitaService = {
     async obtenerVisitasDelDia(fecha: string) {
@@ -15,7 +16,12 @@ export const VisitaService = {
         return visitas;
     },
     async registrarNuevaVisita(datos: any, usuarioId: string) {
-        // 1. Validamos que la cantidad de personas sea un número válido
+        // 1. Validamos el tipo de visita
+        if (!datos.visita?.tipo || !esTipoVisitaValido(datos.visita.tipo)) {
+            throw new Error(`Tipo de visita inválido. Los valores permitidos son: ${TIPOS_VISITA.join(', ')}`);
+        }
+
+        // 2. Validamos que la cantidad de personas sea un número válido
         const cantidadPersonas = parseInt(datos.visita.cantidad_personas, 10);
         if (isNaN(cantidadPersonas) || cantidadPersonas <= 0) {
             throw new Error('La cantidad de personas debe ser un número mayor a cero');
@@ -153,35 +159,110 @@ export const VisitaService = {
 
         return calendarioMensual;
     },
-    async cancelarVisita(id: string, motivo?: string) {
-        // Acá en el futuro podrías agregar la lógica para guardar el 'motivo' en la tabla de Auditoría[cite: 1, 2].
-        // Por ahora, procedemos a cambiar el estado.
-        const visitaCancelada = await VisitaRepository.cancelarVisita(id);
+    async cancelarVisita(id: string, usuarioId: string, motivo?: string) {
+        // 1. Obtenemos los datos de la visita antes de cancelar (para el log)
+        const visitaActual = await VisitaRepository.getById(id);
+        if (!visitaActual) throw new Error('Visita no encontrada');
 
-        if (!visitaCancelada) {
-            throw new Error('Visita no encontrada');
+        if (visitaActual.estado === 'Cancelada') {
+            throw new Error('La visita ya se encuentra cancelada');
         }
 
-        return visitaCancelada;
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 2. Cancelamos la visita
+            const result = await client.query(
+                `UPDATE Visita SET estado = 'Cancelada' WHERE id = $1
+                 RETURNING id, fecha, hora_inicio, estado`,
+                [id]
+            );
+            const visitaCancelada = result.rows[0];
+
+            // 3. Registramos en el log de auditoría
+            const fechaLimpia = visitaActual.fecha
+                ? new Date(visitaActual.fecha).toLocaleDateString('es-AR')
+                : id;
+            const accion = motivo
+                ? `Canceló visita del grupo "${visitaActual.grupo_nombre}" (${fechaLimpia}). Motivo: ${motivo}`
+                : `Canceló visita del grupo "${visitaActual.grupo_nombre}" (${fechaLimpia})`;
+
+            await client.query(
+                `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                [usuarioId, accion]
+            );
+
+            await client.query('COMMIT');
+            return visitaCancelada;
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     },
     async obtenerPorId(id: string) {
         const visita = await VisitaRepository.getById(id);
         if (!visita) throw new Error('Visita no encontrada');
         return visita;
     },
-    async modificarVisita(id: string, datos: any) {
+    async modificarVisita(id: string, datos: any, usuarioId: string) {
         const visitaActual = await VisitaRepository.getById(id);
         if (!visitaActual) throw new Error('Visita no encontrada');
+
+        // Validar tipo si se está modificando
+        if (datos.tipo !== undefined && !esTipoVisitaValido(datos.tipo)) {
+            throw new Error(`Tipo de visita inválido. Los valores permitidos son: ${TIPOS_VISITA.join(', ')}`);
+        }
+
+        // Validar estado si se está modificando
+        if (datos.estado !== undefined && !esEstadoVisitaValido(datos.estado)) {
+            throw new Error(`Estado inválido. Los valores permitidos son: ${ESTADOS_VISITA.join(', ')}`);
+        }
 
         const nuevaFecha = datos.fecha || visitaActual.fecha.toISOString().split('T')[0];
         const nuevaHora = datos.hora_inicio || visitaActual.hora_inicio;
         const nuevaCantidad = datos.cantidad_personas || visitaActual.cantidad_personas;
 
         if (datos.fecha || datos.hora_inicio || datos.cantidad_personas) {
-            // AQUÍ: Agregamos el 'id' como cuarto parámetro para excluir esta visita
             await AvailabilityService.validarDisponibilidad(nuevaFecha, nuevaHora, nuevaCantidad, id);
         }
 
+        const estadoCambio = datos.estado !== undefined && datos.estado !== visitaActual.estado;
+
+        if (estadoCambio) {
+            // Ejecutar update + audit log en una transacción
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+
+                // Actualizamos la visita
+                const visitaActualizada = await VisitaRepository.updateVisita(id, datos);
+
+                // Registramos el cambio de estado en audit
+                const fechaLimpia = visitaActual.fecha
+                    ? new Date(visitaActual.fecha).toLocaleDateString('es-AR')
+                    : id;
+                const accion = `Cambió estado de visita del grupo "${visitaActual.grupo_nombre}" (${fechaLimpia}) de "${visitaActual.estado}" a "${datos.estado}"`;
+
+                await client.query(
+                    `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                    [usuarioId, accion]
+                );
+
+                await client.query('COMMIT');
+                return visitaActualizada;
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
+            }
+        }
+
+        // Sin cambio de estado: update directo sin log adicional
         const visitaActualizada = await VisitaRepository.updateVisita(id, datos);
         return visitaActualizada;
     }

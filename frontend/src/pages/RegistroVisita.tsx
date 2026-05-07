@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { TIPOS_VISITA } from '../utils/visitaTypes';
 
 export const RegistroVisita = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const token = localStorage.getItem('token');
     const [gestores, setGestores] = useState<any[]>([]);
+    const [errorSubmit, setErrorSubmit] = useState<string | null>(null);
 
     const fechaInicial = searchParams.get('fecha') || new Date().toISOString().split('T')[0];
 
@@ -17,7 +19,7 @@ export const RegistroVisita = () => {
         visita: {
             fecha: fechaInicial,
             hora_inicio: '',
-            tipo: 'Guiada',
+            tipo: 'Complejo',
             tiene_cruce_tunel: false,
             cantidad_personas: '',
             tiene_discapacidad: false,
@@ -47,15 +49,21 @@ export const RegistroVisita = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorSubmit(null);
         try {
             const res = await fetch('http://localhost:3000/api/visitas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(form)
             });
-            if (res.ok) navigate('/dashboard');
+            if (res.ok) {
+                navigate('/dashboard');
+            } else {
+                const data = await res.json();
+                setErrorSubmit(data.error || 'Error al registrar la visita.');
+            }
         } catch (error) {
-            alert("Error al registrar visita");
+            setErrorSubmit('Error de conexión con el servidor.');
         }
     };
 
@@ -64,6 +72,14 @@ export const RegistroVisita = () => {
     return (
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 space-y-8">
             <h1 className="text-h2 font-h2">Registrar Nueva Visita</h1>
+
+            {/* Error de submit */}
+            {errorSubmit && (
+                <div className="p-4 bg-error-container/20 border border-error/50 rounded-lg text-error text-sm font-medium flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">error</span>
+                    {errorSubmit}
+                </div>
+            )}
 
             {/* SECCIÓN 1: GESTOR (CU-003: Asignar o Crear) */}
             <section className="bg-surface-container-low p-6 rounded-xl border border-surface-container">
@@ -162,6 +178,13 @@ export const RegistroVisita = () => {
                             onChange={(e) => setForm({ ...form, visita: { ...form.visita, hora_inicio: e.target.value } })}>
                             <option value="">Seleccione hora</option>
                             {generarHorarios().map(hora => <option key={hora} value={hora}>{hora}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold uppercase text-outline">Tipo de Visita</label>
+                        <select required className={inputClass} value={form.visita.tipo}
+                            onChange={(e) => setForm({ ...form, visita: { ...form.visita, tipo: e.target.value } })}>
+                            {TIPOS_VISITA.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                     <div>

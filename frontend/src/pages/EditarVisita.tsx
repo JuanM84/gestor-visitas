@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
+import { TIPOS_VISITA } from '../utils/visitaTypes';
+import { ESTADOS_VISITA, BADGE_ESTADO } from '../utils/visitaTypes';
 
 export const EditarVisita = () => {
     const { id } = useParams();
@@ -13,7 +15,7 @@ export const EditarVisita = () => {
         hora_inicio: '',
         cantidad_personas: 0,
         estado: '',
-        tipo: 'Guiada',
+        tipo: 'Complejo',
         tiene_cruce_tunel: false,
         tiene_discapacidad: false,
         discapacidad_detalle: ''
@@ -40,7 +42,7 @@ export const EditarVisita = () => {
                     hora_inicio: data.hora_inicio.slice(0, 5), // Cortamos a HH:MM para el input time
                     cantidad_personas: data.cantidad_personas,
                     estado: data.estado,
-                    tipo: data.tipo || 'Guiada',
+                    tipo: data.tipo || 'Complejo',
                     tiene_cruce_tunel: data.tiene_cruce_tunel || false,
                     tiene_discapacidad: data.tiene_discapacidad || false,
                     discapacidad_detalle: data.discapacidad_detalle || ''
@@ -129,11 +131,9 @@ export const EditarVisita = () => {
                         <input type="time" required step="1800" value={formData.hora_inicio} onChange={(e) => setFormData({ ...formData, hora_inicio: e.target.value })} className={inputStyles} />
                     </div>
                     <div>
-                        <label className="font-label-sm block mb-1">Tipo de Recorrido</label>
+                        <label className="font-label-sm block mb-1">Tipo de Visita</label>
                         <select value={formData.tipo} onChange={(e) => setFormData({ ...formData, tipo: e.target.value })} className={cn(inputStyles, "cursor-pointer")}>
-                            <option value="Guiada">Guiada (General)</option>
-                            <option value="Técnica">Técnica</option>
-                            <option value="Institucional">Institucional</option>
+                            {TIPOS_VISITA.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                     <div>
@@ -184,12 +184,24 @@ export const EditarVisita = () => {
 
                 {/* 3. Estado */}
                 <div>
-                    <label className="font-label-sm block mb-1 text-on-surface-variant uppercase tracking-wider">Estado de la Visita</label>
-                    <select value={formData.estado} onChange={(e) => setFormData({ ...formData, estado: e.target.value })} className={cn(inputStyles, "cursor-pointer font-bold text-on-surface")}>
-                        <option value="Agendada">Agendada (Pendiente)</option>
-                        <option value="Confirmada">Confirmada</option>
-                        <option value="Realizada">Realizada</option>
-                        <option value="Cancelada">Cancelada</option>
+                    <label className="font-label-sm block mb-2 text-on-surface-variant uppercase tracking-wider">Estado de la Visita</label>
+                    <div className="flex items-center gap-3 mb-3">
+                        <span className="text-sm text-on-surface-variant">Actual:</span>
+                        <span className={cn(
+                            "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest",
+                            BADGE_ESTADO[formData.estado] ?? 'bg-surface-container text-outline border border-outline-variant'
+                        )}>
+                            {formData.estado}
+                        </span>
+                    </div>
+                    <select
+                        value={formData.estado}
+                        onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                        className={cn(inputStyles, "cursor-pointer font-bold text-on-surface")}
+                    >
+                        {ESTADOS_VISITA.map(e => (
+                            <option key={e} value={e}>{e}</option>
+                        ))}
                     </select>
                 </div>
 
