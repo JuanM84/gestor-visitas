@@ -7,6 +7,8 @@ import authRoutes from './routes/auth.routes';
 import diaInhabilRoutes from './routes/diaInhabil.routes';
 import configuracionRoutes from './routes/configuracion.routes';
 import usuarioRoutes from './routes/usuario.routes';
+import estadisticasRoutes from './routes/estadisticas.routes';
+import auditoriaRoutes from './routes/auditoria.routes';
 
 dotenv.config();
 
@@ -23,6 +25,8 @@ app.use('/api/gestores', gestorRoutes);
 app.use('/api/dias-inhabiles', diaInhabilRoutes);
 app.use('/api/configuracion', configuracionRoutes);
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/estadisticas', estadisticasRoutes);
+app.use('/api/auditoria', auditoriaRoutes)
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {

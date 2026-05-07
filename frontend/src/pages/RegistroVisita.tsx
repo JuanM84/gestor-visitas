@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 
 export const RegistroVisita = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const token = localStorage.getItem('token');
     const [gestores, setGestores] = useState<any[]>([]);
 
-    // Estado unificado para cumplir con el esquema
+    const fechaInicial = searchParams.get('fecha') || new Date().toISOString().split('T')[0];
+
     const [form, setForm] = useState({
         gestor_id: '',
         nuevoGestor: { nombre: '', tipo: 'Otro', telefono: '', email: '', localidad: '', provincia: '', pais: '' },
         grupo: { nombre: '', tipo: 'Escolar', nivel_educativo: 'Primario', descripcion: '' },
-        visita: { fecha: '', hora_inicio: '', tipo: 'Guiada', tiene_cruce_tunel: false, cantidad_personas: '', tiene_discapacidad: false, discapacidad_detalle: '' }
+        visita: {
+            fecha: fechaInicial,
+            hora_inicio: '',
+            tipo: 'Guiada',
+            tiene_cruce_tunel: false,
+            cantidad_personas: '',
+            tiene_discapacidad: false,
+            discapacidad_detalle: ''
+        }
     });
 
     // Generamos los slots de 30 min (08:00 a 18:00)
@@ -143,69 +153,42 @@ export const RegistroVisita = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label className="text-xs font-bold uppercase text-outline">Fecha</label>
-                        <input
-                            type="date" required className={inputClass}
-                            onChange={(e) => setForm({ ...form, visita: { ...form.visita, fecha: e.target.value } })}
-                        />
+                        <input type="date" required className={inputClass} value={form.visita.fecha}
+                            onChange={(e) => setForm({ ...form, visita: { ...form.visita, fecha: e.target.value } })} />
                     </div>
                     <div>
                         <label className="text-xs font-bold text-outline">Hora de Inicio</label>
-                        <select
-                            required
-                            className={inputClass}
-                            value={form.visita.hora_inicio}
-                            onChange={(e) => setForm({ ...form, visita: { ...form.visita, hora_inicio: e.target.value } })}
-                        >
+                        <select required className={inputClass} value={form.visita.hora_inicio}
+                            onChange={(e) => setForm({ ...form, visita: { ...form.visita, hora_inicio: e.target.value } })}>
                             <option value="">Seleccione hora</option>
-                            {generarHorarios().map(hora => (
-                                <option key={hora} value={hora}>{hora}</option>
-                            ))}
+                            {generarHorarios().map(hora => <option key={hora} value={hora}>{hora}</option>)}
                         </select>
                     </div>
                     <div>
                         <label className="text-xs font-bold uppercase text-outline">Personas</label>
-                        <input
-                            type="number" required className={inputClass}
-                            onChange={(e) => setForm({ ...form, visita: { ...form.visita, cantidad_personas: e.target.value } })}
-                        />
+                        <input type="number" required className={inputClass}
+                            onChange={(e) => setForm({ ...form, visita: { ...form.visita, cantidad_personas: e.target.value } })} />
                     </div>
-                    <div>
-                        <label className="text-xs font-bold uppercase text-outline">Tipo de Visita</label>
-                        <select
-                            className={inputClass}
-                            value={form.visita.tipo}
-                            onChange={(e) => setForm({ ...form, visita: { ...form.visita, tipo: e.target.value } })}
-                        >
-                            <option>Complejo</option>
-                            <option>Complejo y Monitoreo</option>
-                        </select>
-                    </div>
-                    <div className="flex flex-col justify-center gap-3 pt-4">
+
+                    <div className="flex flex-col gap-2 pt-4">
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="cruce" className="w-5 h-5" onChange={(e) => setForm({ ...form, visita: { ...form.visita, tiene_cruce_tunel: e.target.checked } })} />
-                            <label htmlFor="cruce" className="text-sm font-medium">¿Realiza cruce?</label>
+                            <label htmlFor="cruce" className="text-sm font-medium">¿Tiene cruce?</label>
                         </div>
+                        {/* CHECKBOX DE DISCAPACIDAD */}
                         <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox" id="discapacidad" className="w-5 h-5"
-                                checked={form.visita.tiene_discapacidad}
-                                onChange={(e) => setForm({ ...form, visita: { ...form.visita, tiene_discapacidad: e.target.checked } })}
-                            />
-                            <label htmlFor="discapacidad" className="text-sm font-medium text-secondary">¿Necesita accesibilidad?</label>
+                            <input type="checkbox" id="discap" className="w-5 h-5" checked={form.visita.tiene_discapacidad}
+                                onChange={(e) => setForm({ ...form, visita: { ...form.visita, tiene_discapacidad: e.target.checked } })} />
+                            <label htmlFor="discap" className="text-sm font-medium text-secondary">¿Accesibilidad req.?</label>
                         </div>
                     </div>
 
+                    {/* INPUT CONDICIONAL PARA DETALLE */}
                     {form.visita.tiene_discapacidad && (
-                        <div className="md:col-span-4 mt-2 p-4 bg-secondary-container/20 rounded-lg border border-secondary/20">
-                            <label className="text-xs font-bold uppercase text-secondary">Detalle de Accesibilidad / Discapacidad</label>
-                            <input
-                                type="text"
-                                required
-                                className={inputClass}
-                                placeholder="Ej: 1 persona en silla de ruedas. Requiere rampa."
+                        <div className="md:col-span-4 mt-2">
+                            <input placeholder="Describa el requerimiento (ej: 2 personas en silla de ruedas)" className={inputClass}
                                 value={form.visita.discapacidad_detalle}
-                                onChange={(e) => setForm({ ...form, visita: { ...form.visita, discapacidad_detalle: e.target.value } })}
-                            />
+                                onChange={(e) => setForm({ ...form, visita: { ...form.visita, discapacidad_detalle: e.target.value } })} />
                         </div>
                     )}
                 </div>

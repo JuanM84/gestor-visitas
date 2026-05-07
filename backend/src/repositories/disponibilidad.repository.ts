@@ -30,16 +30,21 @@ export const DisponibilidadRepository = {
     },
 
     // Control de Solapamiento[cite: 1]
-    async existeSolapamiento(fecha: string, hora_inicio: string): Promise<boolean> {
-        // Asegura que no exista una visita 'Agendada' o 'En Curso' para la misma fecha y hora[cite: 1]
-        const query = `
-            SELECT id FROM Visita 
-            WHERE TO_CHAR(fecha, 'YYYY-MM-DD') = $1 
-            AND hora_inicio = $2 
-            AND estado IN ('Agendada', 'En Curso', 'Bloqueado')
+    async existeSolapamiento(fecha: string, hora_inicio: string, visitaIdAExcluir?: string) {
+        let query = `
+            SELECT COUNT(id) as total
+            FROM Visita 
+            WHERE fecha = $1 AND hora_inicio = $2 AND estado != 'Cancelada'
         `;
-        const result = await pool.query(query, [fecha, hora_inicio]);
+        let valores: any[] = [fecha, hora_inicio];
 
-        return result.rows.length > 0;
+        // Si viene un ID, lo excluimos de la búsqueda (es porque estamos editando)
+        if (visitaIdAExcluir) {
+            query += ` AND id != $3`;
+            valores.push(visitaIdAExcluir);
+        }
+
+        const result = await pool.query(query, valores);
+        return parseInt(result.rows[0].total) > 0;
     }
 };

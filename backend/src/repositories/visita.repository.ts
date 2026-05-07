@@ -1,21 +1,20 @@
 import { pool } from '../config/db';
 
 export const VisitaRepository = {
-  // Busca las visitas de una fecha específica, uniendo datos del gestor y grupo
   async findVisitasByFecha(fecha: string) {
     const query = `
-      SELECT 
-        v.id, v.hora_inicio, v.tipo, v.estado, v.cantidad_personas,
-        g.nombre as grupo_nombre,
-        gest.nombre as gestor_nombre
-      FROM Visita v
-      LEFT JOIN Grupo g ON v.grupo_id = g.id
-      LEFT JOIN Gestor gest ON v.gestor_id = gest.id
-      WHERE v.fecha = $1
-      ORDER BY v.hora_inicio ASC;
+        SELECT 
+            v.*, 
+            g.nombre as gestor_nombre, 
+            gr.nombre as grupo_nombre
+        FROM Visita v
+        JOIN Gestor g ON v.gestor_id = g.id
+        JOIN Grupo gr ON v.grupo_id = gr.id
+        WHERE v.fecha = $1 AND v.estado != 'Cancelada'
+        ORDER BY v.hora_inicio ASC
     `;
-    const result = await pool.query(query, [fecha]);
-    return result.rows;
+    const res = await pool.query(query, [fecha]);
+    return res.rows;
   },
   async crearVisitaTransaccional(datos: any) {
     const client = await pool.connect();
@@ -102,19 +101,19 @@ export const VisitaRepository = {
   },
   async getById(id: string) {
     const query = `
-      SELECT 
-        v.id, v.fecha, v.hora_inicio, v.tipo as visita_tipo, v.tiene_cruce_tunel, v.cantidad_personas, v.estado, v.created_at,
-        g.nombre as grupo_nombre, g.tipo as grupo_tipo, g.nivel_educativo, g.descripcion as grupo_descripcion,
-        gest.nombre as gestor_nombre, gest.tipo as gestor_tipo, gest.telefono, gest.email,
-        u.nombre as usuario_registro
-      FROM Visita v
-      JOIN Grupo g ON v.grupo_id = g.id
-      JOIN Gestor gest ON v.gestor_id = gest.id
-      JOIN Usuario u ON v.usuario_registro_id = u.id
-      WHERE v.id = $1;
+        SELECT 
+            v.*, 
+            g.nombre as gestor_nombre, 
+            gr.nombre as grupo_nombre,
+            gr.descripcion as grupo_descripcion,
+            gr.nivel_educativo
+        FROM Visita v
+        JOIN Gestor g ON v.gestor_id = g.id
+        JOIN Grupo gr ON v.grupo_id = gr.id
+        WHERE v.id = $1
     `;
-    const result = await pool.query(query, [id]);
-    return result.rows[0];
+    const res = await pool.query(query, [id]);
+    return res.rows[0];
   },
   async updateVisita(id: string, datos: any) {
     const query = `
@@ -123,17 +122,29 @@ export const VisitaRepository = {
         fecha = COALESCE($1, fecha),
         hora_inicio = COALESCE($2, hora_inicio),
         cantidad_personas = COALESCE($3, cantidad_personas),
-        estado = COALESCE($4, estado)
-      WHERE id = $5 
+        estado = COALESCE($4, estado),
+        tipo = COALESCE($5, tipo),
+        tiene_cruce_tunel = COALESCE($6, tiene_cruce_tunel),
+        tiene_discapacidad = COALESCE($7, tiene_discapacidad),
+        discapacidad_detalle = $8
+      WHERE id = $9 
       RETURNING *;
     `;
+
+    const detalleDiscapacidad = datos.tiene_discapacidad ? datos.discapacidad_detalle : null;
+
     const result = await pool.query(query, [
       datos.fecha,
       datos.hora_inicio,
       datos.cantidad_personas,
       datos.estado,
+      datos.tipo,
+      datos.tiene_cruce_tunel,
+      datos.tiene_discapacidad,
+      detalleDiscapacidad,
       id
     ]);
+
     return result.rows[0];
   }
 };

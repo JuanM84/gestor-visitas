@@ -1,195 +1,193 @@
-import { useEffect, useState } from 'react';
-import { StatCard } from '../components/dashboard/StatCard';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../utils/cn';
-import { Link, useNavigate } from 'react-router-dom';
 
 export const Dashboard = () => {
     const navigate = useNavigate();
-    const [visitas, setVisitas] = useState([]);
+    const [searchParams, setSearchParams] = useSearchParams(); // Obtenemos acceso a los parámetros de la URL
+
+    // 1. Inicializamos la fecha leyendo la URL, o usamos la de hoy si no hay ninguna
+    const fechaInicial = searchParams.get('fecha') || new Date().toISOString().split('T')[0];
+    const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaInicial);
+
+    const [visitas, setVisitas] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [fechaFiltro, setFechaFiltro] = useState(new Date().toISOString().split('T')[0]);
-
-    const [aforoMaximo, setAforoMaximo] = useState(50);
-
     const token = localStorage.getItem('token');
 
-    const fetchVisitas = async () => {
-        try {
-            setLoading(true);
-            const response = await fetch(`http://localhost:3000/api/visitas?fecha=${fechaFiltro}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
-            const visitasData = Array.isArray(result) ? result : (result.data || []);
-            setVisitas(visitasData);
-        } catch (error) {
-            console.error("Error cargando visitas:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // 2. Cada vez que la fecha cambie, actualizamos la URL y traemos los datos
     useEffect(() => {
-        const fetchAforo = async () => {
+        // Actualizamos la URL sin recargar la página (usamos replace para no llenar el historial del navegador)
+        setSearchParams({ fecha: fechaSeleccionada }, { replace: true });
+
+        const fetchVisitas = async () => {
+            setLoading(true);
             try {
-                const res = await fetch('http://localhost:3000/api/configuracion/capacidad_maxima', {
+                const response = await fetch(`http://localhost:3000/api/visitas?fecha=${fechaSeleccionada}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if (res.ok) {
-                    const data = await res.json();
-                    setAforoMaximo(parseInt(data.valor, 10)); // Convertimos el texto a número
+                if (response.ok) {
+                    const result = await response.json();
+                    setVisitas(result.data || []);
                 }
             } catch (error) {
-                console.error("Error cargando aforo máximo:", error);
+                console.error("Error al cargar visitas:", error);
+            } finally {
+                setLoading(false);
             }
         };
-        fetchAforo();
-    }, []);
-
-    useEffect(() => {
         fetchVisitas();
-    }, [fechaFiltro]);
+    }, [fechaSeleccionada, token, setSearchParams]);
 
-    const handleCancelar = async (id: string) => {
-        const motivo = window.prompt('¿Está seguro de cancelar esta visita? Ingrese un motivo (opcional):');
-        if (motivo === null) return;
-
-        try {
-            const response = await fetch(`http://localhost:3000/api/visitas/${id}/cancelar`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ motivo })
-            });
-
-            if (!response.ok) throw new Error('Error al cancelar la visita');
-
-            fetchVisitas();
-        } catch (err: any) {
-            alert(`No se pudo cancelar: ${err.message}`);
-        }
+    const cambiarFecha = (dias: number) => {
+        const nuevaFecha = new Date(fechaSeleccionada + 'T12:00:00'); // T12 para evitar bugs de zona horaria
+        nuevaFecha.setDate(nuevaFecha.getDate() + dias);
+        setFechaSeleccionada(nuevaFecha.toISOString().split('T')[0]);
     };
 
-    const visitasActivas = visitas.filter((v: any) => v.estado !== 'Cancelada');
-
-    const visitantesTotales = visitasActivas.reduce((total, v: any) => {
-        return total + parseInt(v.cantidad_personas || 0, 10);
-    }, 0);
-
-    const cuposDisponibles = Math.max(0, aforoMaximo - visitantesTotales);
+    // Cálculos para las tarjetas de resumen
+    const totalPersonas = visitas.reduce((acc, v) => acc + parseInt(v.cantidad_personas), 0);
+    const totalCruces = visitas.filter(v => v.tiene_cruce_tunel).length;
 
     return (
-        <div className="flex flex-col gap-lg">
-            {/* Header del Dashboard */}
-            <div className="flex justify-between items-end">
+        <div className="flex flex-col max-w-[1200px] w-full mx-auto pb-10">
+            {/* CABECERA Y SELECTOR DE FECHA */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
-                    <h1 className="font-h2 text-h2 mb-xs">Visitas del Día</h1>
-                    <p className="text-on-surface-variant">Gestión de delegaciones y horarios operativos.</p>
-                </div>
-                <Link to="/nueva-visita" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary-container transition-all">
-                    <span className="material-symbols-outlined text-[18px]">add</span>
-                    Nueva Visita
-                </Link>
-            </div>
-
-            {/* KPIs Principales */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-                <StatCard
-                    label="Visitas en la Fecha"
-                    value={visitasActivas.length}
-                    icon="calendar_today"
-                />
-                <StatCard
-                    label="Visitantes Totales"
-                    value={visitantesTotales}
-                    icon="group"
-                />
-                <StatCard
-                    label="Cupos Disponibles"
-                    value={cuposDisponibles}
-                    icon="pending_actions"
-                    variant={cuposDisponibles === 0 ? "error" : "primary"}
-                />
-            </div>
-
-            {/* Tabla de Visitas */}
-            <div className="bg-surface-container-lowest rounded-xl shadow-[0_4px_20px_rgba(0,52,111,0.04)] border border-surface-container overflow-hidden">
-                <div className="p-6 border-b border-surface-container bg-white flex justify-between items-center">
-                    <h2 className="font-h3 text-h3">Cronograma Diario</h2>
-                    <input
-                        type="date"
-                        className="border border-outline-variant rounded-lg px-3 py-1.5 text-sm outline-none focus:border-primary"
-                        value={fechaFiltro}
-                        onChange={(e) => setFechaFiltro(e.target.value)}
-                    />
+                    <h1 className="font-h1 text-h1 text-on-surface">Dashboard Operativo</h1>
+                    <p className="font-body-md text-on-surface-variant">Gestión de turnos y grupos.</p>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-surface text-outline font-label-md uppercase tracking-wider border-b border-surface-container">
-                                <th className="p-4 pl-6">Hora</th>
-                                <th className="p-4">Tipo</th>
-                                <th className="p-4">Grupo / Gestor</th>
-                                <th className="p-4 text-center">Personas</th>
-                                <th className="p-4">Estado</th>
-                                <th className="p-4 pr-6 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-surface-container">
-                            {loading ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-outline">Cargando cronograma...</td></tr>
-                            ) : visitasActivas.length === 0 ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-outline">No hay visitas activas agendadas para esta fecha.</td></tr>
-                            ) : (
-                                visitasActivas.map((v: any) => (
-                                    <tr key={v.id} className="hover:bg-surface-container-low transition-colors group">
-                                        <td className="p-4 pl-6 font-bold">{v.hora_inicio.slice(0, 5)}</td>
-                                        <td className="p-4 text-on-surface-variant text-sm">{v.tipo}</td>
-                                        <td className="p-4">
-                                            <div className="font-semibold text-sm">{v.grupo_nombre}</div>
-                                            <div className="text-xs text-outline">{v.gestor_nombre}</div>
-                                        </td>
-                                        <td className="p-4 text-center font-medium">{v.cantidad_personas}</td>
-                                        <td className="p-4">
-                                            <span className={cn(
-                                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                                                v.estado === 'Realizada' ? "bg-[#e6f4ea] text-[#137333]" :
-                                                    "bg-[#fff8e1] text-[#b08d00]"
-                                            )}>
-                                                {v.estado}
-                                            </span>
-                                        </td>
-                                        {/* 5. BOTONERA: Ver, Editar y Cancelar */}
-                                        <td className="p-4 pr-6 text-right flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(`/nueva-visita?fecha=${fechaSeleccionada}`)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all shadow-sm text-sm"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                        Agendar para este día
+                    </button>
+
+                    <div className="flex items-center gap-2 bg-surface-container-low p-1.5 rounded-xl border border-outline-variant shadow-sm">
+                        <button onClick={() => cambiarFecha(-1)} className="p-2 hover:bg-surface-container rounded-lg transition-colors">
+                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                        </button>
+                        <input
+                            type="date"
+                            value={fechaSeleccionada}
+                            onChange={(e) => setFechaSeleccionada(e.target.value)}
+                            className="bg-transparent border-none font-bold text-primary focus:ring-0 cursor-pointer"
+                        />
+                        <button onClick={() => cambiarFecha(1)} className="p-2 hover:bg-surface-container rounded-lg transition-colors">
+                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* TARJETAS DE RESUMEN (KPIs) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+                        <span className="material-symbols-outlined text-3xl">confirmation_number</span>
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Total Visitas</p>
+                        <h2 className="text-3xl font-black text-on-surface">{visitas.length}</h2>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-xl flex items-center justify-center">
+                        <span className="material-symbols-outlined text-3xl">groups</span>
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Total Personas</p>
+                        <h2 className="text-3xl font-black text-on-surface">{totalPersonas}</h2>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center">
+                        <span className="material-symbols-outlined text-3xl">commute</span>
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Cruces Túnel</p>
+                        <h2 className="text-3xl font-black text-on-surface">{totalCruces}</h2>
+                    </div>
+                </div>
+            </div>
+
+            {/* LISTADO DE TURNOS */}
+            <div className="bg-white rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-surface-container-highest flex justify-between items-center bg-surface-container-lowest">
+                    <h3 className="font-h3 text-on-surface">Cronograma de Visitas</h3>
+                    <span className="text-sm font-medium text-outline">
+                        {visitas.length === 0 ? 'Sin registros' : `${visitas.length} turnos programados`}
+                    </span>
+                </div>
+
+                <div className="p-6">
+                    {loading ? (
+                        <div className="py-20 text-center text-outline">Cargando cronograma...</div>
+                    ) : visitas.length === 0 ? (
+                        <div className="py-20 text-center flex flex-col items-center gap-4">
+                            <span className="material-symbols-outlined text-6xl text-surface-container-high">event_busy</span>
+                            <p className="text-on-surface-variant font-medium">No hay visitas agendadas para esta fecha.</p>
+                            <button
+                                onClick={() => navigate(`/nueva-visita?fecha=${fechaSeleccionada}`)}
+                                className="mt-2 text-primary font-bold hover:underline"
+                            >
+                                Registrar una visita ahora
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {visitas.map((visita) => (
+                                <div
+                                    key={visita.id}
+                                    className="group p-5 border border-outline-variant rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-primary/40 hover:bg-primary/[0.02] transition-all"
+                                >
+                                    <div className="flex gap-5 items-center">
+                                        <div className="w-16 h-16 rounded-2xl bg-sky-100 text-sky-800 flex flex-col items-center justify-center border border-sky-200 shrink-0">
+                                            <span className="text-lg font-black leading-none">{visita.hora_inicio.slice(0, 5)}</span>
+                                            <span className="text-[10px] uppercase font-bold mt-1">HS</span>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h4 className="font-black text-on-surface text-xl">{visita.grupo_nombre}</h4>
+                                                {visita.tiene_discapacidad && (
+                                                    <span className="material-symbols-outlined text-secondary text-[20px]" title="Requiere accesibilidad">accessible_forward</span>
+                                                )}
+                                            </div>
+                                            <p className="text-on-surface-variant flex items-center gap-1.5 font-medium">
+                                                <span className="material-symbols-outlined text-[18px]">domain</span>
+                                                {visita.gestor_nombre}
+                                                <span className="mx-1 text-outline">•</span>
+                                                <span className="text-sm">{visita.tipo}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6 self-end md:self-center">
+                                        <div className="text-right">
+                                            <p className="text-xl font-black text-primary leading-none">{visita.cantidad_personas}</p>
+                                            <p className="text-[10px] uppercase font-bold text-outline mt-1">Personas</p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => navigate(`/visitas/${v.id}`)}
-                                                className="p-1.5 text-outline hover:text-primary transition-colors rounded hover:bg-surface-container-low"
-                                                title="Ver Detalles"
+                                                onClick={() => navigate(`/visitas/${visita.id}`)}
+                                                className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors"
+                                                title="Ver detalle"
                                             >
-                                                <span className="material-symbols-outlined text-[20px]">visibility</span>
+                                                <span className="material-symbols-outlined">visibility</span>
                                             </button>
-                                            <button
-                                                onClick={() => navigate(`/visitas/editar/${v.id}`)}
-                                                className="p-1.5 text-outline hover:text-primary transition-colors rounded hover:bg-surface-container-low"
-                                                title="Editar"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">edit</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleCancelar(v.id)}
-                                                className="p-1.5 text-outline hover:text-error transition-colors rounded hover:bg-error-container"
-                                                title="Cancelar Visita"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">cancel</span>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

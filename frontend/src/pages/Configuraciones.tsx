@@ -212,7 +212,7 @@ export const Configuraciones = () => {
                                     dias.map((dia) => (
                                         <tr key={dia.id} className="hover:bg-surface-bright transition-colors">
                                             <td className="p-4 font-medium text-error">
-                                                {new Date(dia.fecha).toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                                {new Date(dia.fecha.split('T')[0] + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                             </td>
                                             <td className="p-4 text-on-surface-variant">{dia.descripcion}</td>
                                             <td className="p-4 text-right">

@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
 
 export const DetalleVisita = () => {
-    const { id } = useParams(); // Obtenemos el ID de la URL
+    const { id } = useParams();
     const navigate = useNavigate();
     const [visita, setVisita] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -33,114 +33,139 @@ export const DetalleVisita = () => {
     }, [id]);
 
     if (loading) return <div className="p-8 text-center text-on-surface-variant animate-pulse">Cargando detalles...</div>;
-    if (error) return <div className="p-8 text-center text-error">{error}</div>;
-    if (!visita) return <div className="p-8 text-center text-on-surface-variant">Visita no encontrada.</div>;
+    if (error || !visita) return <div className="p-8 text-center text-error">{error || 'Visita no encontrada'}</div>;
+
+    // --- FUNCIÓN ROBUSTA PARA EVITAR EL NaN ---
+    const formatFechaHora = () => {
+        try {
+            // Extraemos solo YYYY-MM-DD por si viene con T00:00:00
+            const fechaLimpia = visita.fecha.includes('T') ? visita.fecha.split('T')[0] : visita.fecha;
+            const [year, month, day] = fechaLimpia.split('-');
+            const hora = visita.hora_inicio.slice(0, 5);
+            return `${parseInt(day)}/${parseInt(month)}/${year} a las ${hora} hs`;
+        } catch (e) {
+            return "Fecha no disponible";
+        }
+    };
 
     return (
-        <div className="flex flex-col max-w-[1000px] w-full mx-auto">
-            {/* Cabecera */}
-            <div className="flex items-center justify-between mb-lg">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate('/visitas')} className="p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant">
-                        <span className="material-symbols-outlined">arrow_back</span>
-                    </button>
-                    <div>
-                        <h1 className="font-h2 text-h2 text-on-surface flex items-center gap-3">
-                            Detalle de Reserva
-                            <span className={cn(
-                                "text-sm px-3 py-1 rounded-full font-medium tracking-wide",
-                                visita.estado === 'Confirmada' || visita.estado === 'Agendada' ? "bg-primary-container text-on-primary-container" :
-                                    visita.estado === 'Realizada' ? "bg-[#e6f4ea] text-[#137333]" :
-                                        visita.estado === 'Cancelada' ? "bg-error-container text-on-error-container" :
-                                            "bg-surface-variant text-on-surface-variant"
-                            )}>
-                                {visita.estado}
-                            </span>
-                        </h1>
-                        <p className="font-body-md text-on-surface-variant">Registrada por {visita.usuario_registro} el {new Date(visita.created_at).toLocaleDateString()}</p>
-                    </div>
+        <div className="flex flex-col max-w-[1000px] w-full mx-auto pb-12">
+            {/* Header / Navegación */}
+            <div className="flex items-center gap-4 mb-8">
+                <button onClick={() => navigate(-1)} className="p-2 hover:bg-surface-container rounded-full transition-colors">
+                    <span className="material-symbols-outlined">arrow_back</span>
+                </button>
+                <div>
+                    <h1 className="font-h1 text-h1 text-on-surface">Detalle de la Reserva</h1>
+                    <p className="font-body-md text-on-surface-variant">Gestión y control de la visita programada.</p>
                 </div>
-                <Button variant="outline" onClick={() => window.print()}>
-                    <span className="material-symbols-outlined text-[18px]">print</span>
-                    Imprimir Comprobante
-                </Button>
             </div>
 
-            {/* Tarjetas de Información */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                {/* Tarjeta: Información de la Visita */}
-                <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant">
-                    <div className="flex items-center gap-2 mb-4 text-primary">
-                        <span className="material-symbols-outlined">event_available</span>
-                        <h2 className="font-h3 text-h3">Agenda</h2>
+                {/* 1. Información Principal */}
+                <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant md:col-span-2">
+                    <div className="flex justify-between items-start flex-wrap gap-4">
+                        <div className="flex gap-6 items-center">
+                            <div className="w-16 h-16 rounded-2xl bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-xl border border-sky-200">
+                                {visita.hora_inicio.slice(0, 5)}
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <h2 className="text-3xl font-black text-on-surface">{visita.grupo_nombre}</h2>
+                                    <span className={cn(
+                                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
+                                        visita.estado === 'Agendada'
+                                            ? "bg-sky-100 text-sky-800 border-sky-200"
+                                            : "bg-surface-container text-on-surface-variant border-outline-variant"
+                                    )}>
+                                        {visita.estado}
+                                    </span>
+                                </div>
+                                <p className="text-lg text-on-surface-variant font-medium flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[20px]">domain</span>
+                                    {visita.gestor_nombre}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-surface-container-low px-6 py-3 rounded-2xl border border-outline-variant text-center">
+                            <p className="text-2xl font-black text-primary leading-none">{visita.cantidad_personas}</p>
+                            <p className="text-[10px] font-bold uppercase text-outline mt-1 tracking-tighter">Personas</p>
+                        </div>
                     </div>
-                    <div className="space-y-4">
+                </div>
+
+                {/* 2. Agenda */}
+                <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant">
+                    <div className="flex items-center gap-2 mb-6 text-primary">
+                        <span className="material-symbols-outlined">calendar_month</span>
+                        <h2 className="font-h3 text-h3">Agenda y Turno</h2>
+                    </div>
+                    <div className="space-y-6">
                         <div>
                             <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Fecha y Hora</p>
-                            <p className="font-body-lg text-on-surface">{visita.fecha.split('T')[0]} a las {visita.hora_inicio} hs</p>
+                            <p className="font-body-lg text-on-surface font-semibold">{formatFechaHora()}</p>
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Tipo de Recorrido</p>
-                            <p className="font-body-lg text-on-surface">{visita.visita_tipo} {visita.tiene_cruce_tunel ? '(Incluye cruce de túnel)' : ''}</p>
+                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Tipo de Visita</p>
+                            <p className="font-body-lg text-on-surface">{visita.tipo}</p>
                         </div>
-                        <div>
-                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Cantidad de Personas</p>
-                            <p className="font-body-lg text-on-surface">{visita.cantidad_personas} visitantes</p>
+                        <div className="flex items-center gap-2 py-2 px-4 bg-surface-container-low rounded-xl border border-outline-variant w-fit">
+                            <span className={cn("material-symbols-outlined text-[20px]", visita.tiene_cruce_tunel ? "text-[#137333]" : "text-outline")}>
+                                {visita.tiene_cruce_tunel ? 'check_circle' : 'cancel'}
+                            </span>
+                            <span className="text-sm font-bold text-on-surface">
+                                {visita.tiene_cruce_tunel ? 'Realiza Cruce del Túnel' : 'Sin Cruce del Túnel'}
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Tarjeta: Institución / Gestor */}
-                <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant">
-                    <div className="flex items-center gap-2 mb-4 text-primary">
-                        <span className="material-symbols-outlined">domain</span>
-                        <h2 className="font-h3 text-h3">Institución a Cargo</h2>
-                    </div>
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Nombre</p>
-                            <p className="font-body-lg text-on-surface">{visita.gestor_nombre}</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Tipo</p>
-                                <p className="font-body-lg text-on-surface">{visita.gestor_tipo}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Teléfono</p>
-                                <p className="font-body-lg text-on-surface">{visita.telefono || 'No registrado'}</p>
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Correo Electrónico</p>
-                            <p className="font-body-lg text-on-surface">{visita.email || 'No registrado'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tarjeta: Detalles del Grupo */}
-                <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant md:col-span-2">
-                    <div className="flex items-center gap-2 mb-4 text-primary">
+                {/* 3. Información del Grupo */}
+                <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant">
+                    <div className="flex items-center gap-2 mb-6 text-primary">
                         <span className="material-symbols-outlined">groups</span>
-                        <h2 className="font-h3 text-h3">Detalles del Grupo</h2>
+                        <h2 className="font-h3 text-h3">Información del Grupo</h2>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-6">
                         <div>
-                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Nombre del Grupo</p>
-                            <p className="font-body-lg text-on-surface">{visita.grupo_nombre}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Tipo y Nivel</p>
-                            <p className="font-body-lg text-on-surface">{visita.grupo_tipo} {visita.nivel_educativo ? `- ${visita.nivel_educativo}` : ''}</p>
+                            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Nivel Educativo</p>
+                            <p className="font-body-lg text-on-surface">{visita.nivel_educativo || 'N/A'}</p>
                         </div>
                         <div>
                             <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Observaciones</p>
-                            <p className="font-body-lg text-on-surface">{visita.grupo_descripcion || 'Sin observaciones adicionales.'}</p>
+                            <p className="font-body-lg text-on-surface italic text-on-surface-variant">
+                                {visita.grupo_descripcion || 'Sin observaciones adicionales.'}
+                            </p>
                         </div>
                     </div>
                 </div>
 
+                {/* 4. SECCIÓN ACCESIBILIDAD (Corregida la validación) */}
+                {visita.tiene_discapacidad === true && (
+                    <div className="md:col-span-2 bg-secondary-container/10 p-8 rounded-3xl border border-secondary/20 flex gap-6 items-start">
+                        <div className="w-14 h-14 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-4xl">accessible_forward</span>
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-secondary text-sm uppercase tracking-widest mb-1">Requerimiento de Accesibilidad</h4>
+                            <p className="text-on-surface text-xl font-medium leading-relaxed">
+                                {visita.discapacidad_detalle || 'Se indicó requerimiento de accesibilidad.'}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Botones */}
+                <div className="md:col-span-2 flex justify-end gap-4 mt-4">
+                    <Button variant="outline" onClick={() => navigate(`/visitas/editar/${visita.id}`)}>
+                        <span className="material-symbols-outlined">edit</span> Editar Visita
+                    </Button>
+                    <Button variant="outline" className="border-error/30 text-error hover:bg-error/10">
+                        <span className="material-symbols-outlined">cancel</span> Cancelar Turno
+                    </Button>
+                </div>
             </div>
         </div>
     );

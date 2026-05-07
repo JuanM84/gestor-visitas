@@ -11,6 +11,8 @@ import { GestionUsuarios } from './pages/GestionUsuarios';
 import { EditarVisita } from './pages/EditarVisita';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Gestores } from './pages/Gestores';
+import { DashboardAdmin } from './pages/DashboardAdmin';
+import { Auditoria } from './pages/Auditoria';
 
 function App() {
   return (
@@ -64,6 +66,16 @@ function App() {
         <Route path="/gestores" element={
           <ProtectedRoute>
             <MainLayout><Gestores /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/reportes" element={
+          <ProtectedRoute>
+            <MainLayout><DashboardAdmin /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/auditoria" element={
+          <ProtectedRoute>
+            <MainLayout><Auditoria /></MainLayout>
           </ProtectedRoute>
         } />
       </Routes>

@@ -170,21 +170,18 @@ export const VisitaService = {
         return visita;
     },
     async modificarVisita(id: string, datos: any) {
-        // Obtenemos la visita actual para comparar
         const visitaActual = await VisitaRepository.getById(id);
         if (!visitaActual) throw new Error('Visita no encontrada');
 
-        // Si hay cambios en fecha, hora o cantidad de personas, re-evaluamos disponibilidad[cite: 2]
         const nuevaFecha = datos.fecha || visitaActual.fecha.toISOString().split('T')[0];
         const nuevaHora = datos.hora_inicio || visitaActual.hora_inicio;
         const nuevaCantidad = datos.cantidad_personas || visitaActual.cantidad_personas;
 
-        // Solo validamos si realmente cambió algo que afecte el calendario
         if (datos.fecha || datos.hora_inicio || datos.cantidad_personas) {
-            await AvailabilityService.validarDisponibilidad(nuevaFecha, nuevaHora, nuevaCantidad);
+            // AQUÍ: Agregamos el 'id' como cuarto parámetro para excluir esta visita
+            await AvailabilityService.validarDisponibilidad(nuevaFecha, nuevaHora, nuevaCantidad, id);
         }
 
-        // Si pasa la validación (o si solo estaba cambiando el estado), guardamos los cambios
         const visitaActualizada = await VisitaRepository.updateVisita(id, datos);
         return visitaActualizada;
     }
