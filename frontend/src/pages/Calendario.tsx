@@ -54,12 +54,12 @@ export const Calendario = () => {
     const mesSiguiente = () => setFechaActual(new Date(anio, mes + 1, 1));
     const mesActualStr = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(fechaActual);
 
-    // --- NUEVA FUNCIÓN: AL HACER CLIC EN UN DÍA ---
+    // --- FUNCIÓN: AL HACER CLIC EN UN DÍA ---
     const handleDiaClick = async (dia: number) => {
         const estadoDia = obtenerEstadoDia(dia);
 
-        // Si está inhabilitado o no hay visitas, no hacemos la petición (opcional, pero ahorra recursos)
-        if (estadoDia.estado === 'inhabilitado' || estadoDia.estado === 'disponible') {
+        // No hacer nada si el día está inhabilitado
+        if (estadoDia.estado === 'inhabilitado') {
             return;
         }
 
@@ -140,7 +140,7 @@ export const Calendario = () => {
                             const dia = i + 1;
                             const { estado, texto, visitas } = obtenerEstadoDia(dia);
                             const esHoy = new Date().getDate() === dia && new Date().getMonth() === mes && new Date().getFullYear() === anio;
-                            const isClickable = estado === 'parcial' || estado === 'lleno';
+                            const isClickable = estado !== 'inhabilitado';
 
                             return (
                                 <div
@@ -157,7 +157,7 @@ export const Calendario = () => {
                                         <span className={cn("w-8 h-8 flex items-center justify-center rounded-full font-label-md", esHoy ? "bg-primary text-white" : "text-on-surface")}>{dia}</span>
                                     </div>
                                     <div className="mt-auto flex flex-col gap-1">
-                                        {estado !== 'disponible' && estado !== 'inhabilitado' && (
+                                        {visitas > 0 && estado !== 'inhabilitado' && (
                                             <div className="text-xs font-medium text-on-surface-variant">{visitas} personas</div>
                                         )}
                                         <div className={cn(
@@ -198,20 +198,55 @@ export const Calendario = () => {
                         {/* Cuerpo del Modal (Lista de Visitas) */}
                         <div className="p-6 overflow-y-auto flex-1 bg-surface-container-lowest">
                             {loadingVisitas ? (
-                                <div className="text-center text-outline py-8">Cargando reservas...</div>
+                                <div className="flex flex-col items-center justify-center py-12 gap-3 text-outline">
+                                    <span className="animate-spin material-symbols-outlined text-3xl text-primary">sync</span>
+                                    <span>Cargando visitas...</span>
+                                </div>
                             ) : visitasDelDia.length === 0 ? (
-                                <div className="text-center text-outline py-8">No hay reservas para este día.</div>
+                                <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+                                    <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-3xl text-outline">event_available</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-on-surface">Sin visitas registradas</p>
+                                        <p className="text-sm text-outline mt-1">No hay visitas agendadas para este día.</p>
+                                    </div>
+                                    <Link
+                                        to={`/nueva-visita?fecha=${diaSeleccionado}`}
+                                        onClick={cerrarModal}
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-all"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">add</span>
+                                        Agregar visita para este día
+                                    </Link>
+                                </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
-                                    {visitasDelDia.map((visita: any) => (
-                                        <div key={visita.id} className="p-4 border border-outline-variant rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white hover:border-primary/30 transition-colors">
+                                    {visitasDelDia.map((visita: any) => {
+                                        const esCancelada = visita.estado === 'Cancelada';
+                                        const esAgendada  = visita.estado === 'Agendada';
+                                        return (
+                                        <div key={visita.id} className={cn(
+                                            "p-4 border rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white transition-colors",
+                                            esCancelada
+                                                ? "border-red-200 opacity-75 hover:border-red-300"
+                                                : "border-outline-variant hover:border-primary/30"
+                                        )}>
                                             <div className="flex gap-4 items-center">
-                                                <div className="w-12 h-12 rounded-full bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-md border border-sky-200">
+                                                <div className={cn(
+                                                    "w-12 h-12 rounded-full flex items-center justify-center font-bold text-md border",
+                                                    esCancelada
+                                                        ? "bg-red-50 text-red-400 border-red-200 line-through"
+                                                        : "bg-sky-100 text-sky-800 border-sky-200"
+                                                )}>
                                                     {visita.hora_inicio.slice(0, 5)}
                                                 </div>
 
                                                 <div>
-                                                    <h4 className="font-bold text-on-surface text-lg">{visita.grupo_nombre}</h4>
+                                                    <h4 className={cn(
+                                                        "font-bold text-on-surface text-lg",
+                                                        esCancelada && "line-through text-outline"
+                                                    )}>{visita.grupo_nombre}</h4>
                                                     <p className="text-sm text-on-surface-variant flex items-center gap-1">
                                                         <span className="material-symbols-outlined text-[16px]">domain</span>
                                                         {visita.gestor_nombre}
@@ -220,21 +255,21 @@ export const Calendario = () => {
                                             </div>
 
                                             <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1">
-
-                                                {/* --- CAMBIO 2: Texto "Personas" en lugar de "PAX" --- */}
                                                 <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold uppercase tracking-wide">
                                                     {visita.cantidad_personas} Personas
                                                 </span>
-
                                                 <span className={cn(
-                                                    "text-xs font-medium px-2 py-0.5 rounded",
-                                                    visita.estado === 'Agendada' ? "text-[#137333] bg-[#e6f4ea]" : "text-outline bg-surface-container"
+                                                    "text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide",
+                                                    esAgendada  && "text-[#137333] bg-[#e6f4ea]",
+                                                    esCancelada && "text-red-700 bg-red-100",
+                                                    !esAgendada && !esCancelada && "text-outline bg-surface-container"
                                                 )}>
                                                     {visita.estado}
                                                 </span>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

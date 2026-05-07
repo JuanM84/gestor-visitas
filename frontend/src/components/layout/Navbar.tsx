@@ -1,4 +1,11 @@
 export const Navbar = () => {
+    const usuarioRaw = localStorage.getItem('usuario');
+    const usuario = usuarioRaw ? JSON.parse(usuarioRaw) : null;
+    const nombreCompleto: string = usuario?.nombre
+        ? `${usuario.nombre}${usuario.apellido ? ' ' + usuario.apellido : ''}`
+        : usuario?.email ?? 'Usuario';
+    const inicial = nombreCompleto.charAt(0).toUpperCase();
+
     return (
         <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-16 flex justify-between items-center px-8 sticky top-0 z-40 shadow-sm">
             <div className="flex items-center gap-4">
@@ -20,9 +27,19 @@ export const Navbar = () => {
                 <button className="p-2 rounded-full hover:bg-slate-50 transition-colors">
                     <span className="material-symbols-outlined">help</span>
                 </button>
-                <div className="h-8 w-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant ml-2">
-                    <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-500">
-                        <span className="material-symbols-outlined text-sm">person</span>
+
+                {/* Avatar + nombre del usuario */}
+                <div className="flex items-center gap-3 ml-2">
+                    <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
+                        {inicial}
+                    </div>
+                    <div className="hidden lg:flex flex-col leading-tight">
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate max-w-[150px]">
+                            {nombreCompleto}
+                        </span>
+                        <span className="text-xs text-slate-400 capitalize">
+                            {usuario?.rol ?? ''}
+                        </span>
                     </div>
                 </div>
             </div>

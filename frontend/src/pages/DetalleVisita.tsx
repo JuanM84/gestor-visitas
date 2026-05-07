@@ -9,6 +9,7 @@ export const DetalleVisita = () => {
     const [visita, setVisita] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [cancelando, setCancelando] = useState(false);
 
     useEffect(() => {
         const fetchDetalle = async () => {
@@ -31,6 +32,36 @@ export const DetalleVisita = () => {
 
         fetchDetalle();
     }, [id]);
+
+    const handleCancelar = async () => {
+        const motivo = window.prompt('¿Está seguro de cancelar esta visita? Ingrese un motivo (opcional):');
+        if (motivo === null) return; // El usuario presionó Cancelar en el prompt
+
+        const token = localStorage.getItem('token');
+        setCancelando(true);
+        try {
+            const response = await fetch(`http://localhost:3000/api/visitas/${id}/cancelar`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ motivo })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Error al cancelar la visita');
+            }
+
+            // Actualizamos el estado local para reflejar el cambio sin recargar
+            setVisita((prev: any) => ({ ...prev, estado: 'Cancelada' }));
+        } catch (err: any) {
+            alert(`No se pudo cancelar: ${err.message}`);
+        } finally {
+            setCancelando(false);
+        }
+    };
 
     if (loading) return <div className="p-8 text-center text-on-surface-variant animate-pulse">Cargando detalles...</div>;
     if (error || !visita) return <div className="p-8 text-center text-error">{error || 'Visita no encontrada'}</div>;
@@ -75,9 +106,9 @@ export const DetalleVisita = () => {
                                     <h2 className="text-3xl font-black text-on-surface">{visita.grupo_nombre}</h2>
                                     <span className={cn(
                                         "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
-                                        visita.estado === 'Agendada'
-                                            ? "bg-sky-100 text-sky-800 border-sky-200"
-                                            : "bg-surface-container text-on-surface-variant border-outline-variant"
+                                        visita.estado === 'Agendada'  && "bg-sky-100 text-sky-800 border-sky-200",
+                                        visita.estado === 'Cancelada' && "bg-red-100 text-red-700 border-red-200",
+                                        visita.estado !== 'Agendada' && visita.estado !== 'Cancelada' && "bg-surface-container text-on-surface-variant border-outline-variant"
                                     )}>
                                         {visita.estado}
                                     </span>
@@ -162,9 +193,17 @@ export const DetalleVisita = () => {
                     <Button variant="outline" onClick={() => navigate(`/visitas/editar/${visita.id}`)}>
                         <span className="material-symbols-outlined">edit</span> Editar Visita
                     </Button>
-                    <Button variant="outline" className="border-error/30 text-error hover:bg-error/10">
-                        <span className="material-symbols-outlined">cancel</span> Cancelar Turno
-                    </Button>
+                    {visita.estado !== 'Cancelada' && (
+                        <Button
+                            variant="outline"
+                            className="border-error/30 text-error hover:bg-error/10"
+                            onClick={handleCancelar}
+                            disabled={cancelando}
+                        >
+                            <span className="material-symbols-outlined">cancel</span>
+                            {cancelando ? 'Cancelando...' : 'Cancelar Turno'}
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>

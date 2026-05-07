@@ -1,10 +1,11 @@
 import { cn } from "../../utils/cn";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const navItems = [
     { name: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
     { name: 'Calendario', icon: 'calendar_today', path: '/calendario' },
-    { name: 'Visitas', icon: 'confirmation_number', path: '/visitas' },
+    { name: 'Visitas', icon: 'confirmation_number', path: '/visitas', roles: ['Admin'] },
+    { name: 'Auditoria', icon: 'confirmation_number', path: '/auditoria', roles: ['Admin'] },
     { name: 'Gestores', icon: 'groups', path: '/gestores' },
     { name: 'Reportes', icon: 'analytics', path: '/reportes' },
     { name: 'Usuarios', icon: 'manage_accounts', path: '/usuarios', roles: ['Admin'] },
@@ -13,11 +14,19 @@ const navItems = [
 
 export const Sidebar = () => {
 
+    const navigate = useNavigate();
     const userRole = localStorage.getItem('rol') || 'Guía';
 
     const visibleNavItems = navItems.filter(item =>
         !item.roles || item.roles.some(rol => rol.toLowerCase() === userRole.toLowerCase())
     );
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('rol');
+        localStorage.removeItem('usuario');
+        navigate('/login');
+    };
 
     return (
         <nav className="bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 w-64 h-screen flex flex-col pt-4 fixed left-0 top-0 z-50 shadow-[4px_0_24px_rgba(0,74,153,0.05)] hidden md:flex">
@@ -47,6 +56,19 @@ export const Sidebar = () => {
                     </li>
                 ))}
             </ul>
+
+            {/* Botón Cerrar Sesión */}
+            <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-800">
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-slate-500 hover:text-error hover:bg-red-50 transition-all duration-150 group"
+                >
+                    <span className="material-symbols-outlined text-[20px] group-hover:text-error transition-colors">
+                        logout
+                    </span>
+                    <span className="text-sm font-medium">Cerrar Sesión</span>
+                </button>
+            </div>
         </nav>
     );
 };

@@ -10,7 +10,7 @@ export const VisitaRepository = {
         FROM Visita v
         JOIN Gestor g ON v.gestor_id = g.id
         JOIN Grupo gr ON v.grupo_id = gr.id
-        WHERE v.fecha = $1 AND v.estado != 'Cancelada'
+        WHERE v.fecha = $1
         ORDER BY v.hora_inicio ASC
     `;
     const res = await pool.query(query, [fecha]);
