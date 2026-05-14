@@ -3,10 +3,17 @@ import { DisponibilidadRepository } from '../repositories/disponibilidad.reposit
 export const AvailabilityService = {
     async validarDisponibilidad(fecha: string, hora_inicio: string, cantidadPersonas: number, visitaIdAExcluir?: string) {
 
-        // 1. Control de Aforo Máximo
+        // 1. Control de Aforo Máximo diario acumulado
         const capacidadMaxima = await DisponibilidadRepository.obtenerCapacidadMaxima();
-        if (cantidadPersonas > capacidadMaxima) {
-            throw new Error(`La cantidad de personas (${cantidadPersonas}) supera el máximo permitido actualmente (${capacidadMaxima}).`);
+        const personasYaAgendadas = await DisponibilidadRepository.obtenerPersonasAgendadasEnFecha(fecha, visitaIdAExcluir);
+        const totalConNuevaVisita = personasYaAgendadas + cantidadPersonas;
+
+        if (totalConNuevaVisita > capacidadMaxima) {
+            const disponibles = capacidadMaxima - personasYaAgendadas;
+            throw new Error(
+                `Aforo diario superado. Capacidad máxima: ${capacidadMaxima}. ` +
+                `Ya agendadas: ${personasYaAgendadas}. Disponibles: ${disponibles < 0 ? 0 : disponibles}.`
+            );
         }
 
         // 2. Validación de Día Hábil

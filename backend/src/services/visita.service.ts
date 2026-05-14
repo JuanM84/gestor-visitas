@@ -95,7 +95,7 @@ export const VisitaService = {
             );
 
             await client.query('COMMIT');
-            return resVisita.rows[0];
+            return resVisita.rows[0].id;
 
         } catch (error) {
             await client.query('ROLLBACK');
@@ -222,9 +222,9 @@ export const VisitaService = {
             throw new Error(`Estado inválido. Los valores permitidos son: ${ESTADOS_VISITA.join(', ')}`);
         }
 
-        const nuevaFecha = datos.fecha || visitaActual.fecha.toISOString().split('T')[0];
-        const nuevaHora = datos.hora_inicio || visitaActual.hora_inicio;
-        const nuevaCantidad = datos.cantidad_personas || visitaActual.cantidad_personas;
+        const nuevaFecha = datos.fecha ?? visitaActual.fecha.toISOString().split('T')[0];
+        const nuevaHora = datos.hora_inicio ?? visitaActual.hora_inicio;
+        const nuevaCantidad = datos.cantidad_personas ?? visitaActual.cantidad_personas;
 
         if (datos.fecha || datos.hora_inicio || datos.cantidad_personas) {
             await AvailabilityService.validarDisponibilidad(nuevaFecha, nuevaHora, nuevaCantidad, id);

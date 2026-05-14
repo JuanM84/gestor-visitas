@@ -190,6 +190,7 @@ export const RegistroVisita = () => {
                     <div>
                         <label className="text-xs font-bold uppercase text-outline">Personas</label>
                         <input type="number" required className={inputClass}
+                            value={form.visita.cantidad_personas}
                             onChange={(e) => setForm({ ...form, visita: { ...form.visita, cantidad_personas: e.target.value } })} />
                     </div>
 

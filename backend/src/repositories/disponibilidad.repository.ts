@@ -20,7 +20,7 @@ export const DisponibilidadRepository = {
     // Validación de Día Hábil[cite: 1]
     async esDiaInhabil(fecha: string): Promise<boolean> {
         const query = `
-            SELECT id FROM Dialnhabil 
+            SELECT id FROM DiaInhabil 
             WHERE TO_CHAR(fecha, 'YYYY-MM-DD') = $1
         `;
         const result = await pool.query(query, [fecha]);
@@ -46,5 +46,23 @@ export const DisponibilidadRepository = {
 
         const result = await pool.query(query, valores);
         return parseInt(result.rows[0].total) > 0;
+    },
+
+    // Aforo acumulado del día (excluyendo la visita que se está editando si aplica)
+    async obtenerPersonasAgendadasEnFecha(fecha: string, visitaIdAExcluir?: string): Promise<number> {
+        let query = `
+            SELECT COALESCE(SUM(cantidad_personas), 0) as total
+            FROM Visita
+            WHERE fecha = $1 AND estado != 'Cancelada'
+        `;
+        const valores: any[] = [fecha];
+
+        if (visitaIdAExcluir) {
+            query += ` AND id != $2`;
+            valores.push(visitaIdAExcluir);
+        }
+
+        const result = await pool.query(query, valores);
+        return parseInt(result.rows[0].total, 10);
     }
 };
