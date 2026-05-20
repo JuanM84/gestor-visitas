@@ -10,7 +10,7 @@ export const Auditoria = () => {
         const fetchLogs = async () => {
             const token = localStorage.getItem('token');
             try {
-                const response = await fetch('http://localhost:3000/api/auditoria?limite=200', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auditoria?limite=200`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 

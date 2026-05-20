@@ -1,5 +1,6 @@
 import { cn } from "../../utils/cn";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
     { name: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
@@ -13,18 +14,16 @@ const navItems = [
 ];
 
 export const Sidebar = () => {
-
     const navigate = useNavigate();
-    const userRole = localStorage.getItem('rol') || 'Guía';
+    const { usuario, logout } = useAuth();
+    const userRole = usuario?.rol || 'Guía';
 
     const visibleNavItems = navItems.filter(item =>
         !item.roles || item.roles.some(rol => rol.toLowerCase() === userRole.toLowerCase())
     );
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('rol');
-        localStorage.removeItem('usuario');
+        logout();
         navigate('/login');
     };
 

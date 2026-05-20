@@ -26,7 +26,7 @@ export const Gestores = () => {
     const fetchGestores = async () => {
         try {
             setLoading(true);
-            const res = await fetch('http://localhost:3000/api/gestores', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gestores`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Error al cargar el directorio');
@@ -49,7 +49,7 @@ export const Gestores = () => {
         setMensajeForm({ tipo: '', texto: '' });
 
         try {
-            const res = await fetch('http://localhost:3000/api/gestores', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gestores`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

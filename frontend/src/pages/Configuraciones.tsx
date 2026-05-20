@@ -26,7 +26,7 @@ export const Configuraciones = () => {
     // --- Lógica Parámetros Generales ---
     const fetchAforo = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/configuracion/capacidad_maxima', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/configuracion/capacidad_maxima`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -44,7 +44,7 @@ export const Configuraciones = () => {
         setMensajeAforo({ tipo: '', texto: '' });
 
         try {
-            const res = await fetch('http://localhost:3000/api/configuracion/capacidad_maxima', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/configuracion/capacidad_maxima`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ export const Configuraciones = () => {
     // --- Lógica Días Inhábiles ---
     const fetchDias = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/dias-inhabiles', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/dias-inhabiles`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -85,7 +85,7 @@ export const Configuraciones = () => {
         setErrorDias(null);
 
         try {
-            const res = await fetch('http://localhost:3000/api/dias-inhabiles', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/dias-inhabiles`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export const Configuraciones = () => {
         if (!confirm('¿Seguro que desea habilitar nuevamente este día?')) return;
 
         try {
-            const res = await fetch(`http://localhost:3000/api/dias-inhabiles/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/dias-inhabiles/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -212,7 +212,7 @@ export const Configuraciones = () => {
                                     dias.map((dia) => (
                                         <tr key={dia.id} className="hover:bg-surface-bright transition-colors">
                                             <td className="p-4 font-medium text-error">
-                                                {new Date(dia.fecha.split('T')[0] + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                                {new Date(`${String(dia.fecha).substring(0, 10)}T12:00:00`).toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                             </td>
                                             <td className="p-4 text-on-surface-variant">{dia.descripcion}</td>
                                             <td className="p-4 text-right">

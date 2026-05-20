@@ -4,9 +4,11 @@ import { Button } from '../components/ui/Button';
 import * as XLSX from 'xlsx';
 import { cn } from '../utils/cn';
 import { BADGE_ESTADO } from '../utils/visitaTypes';
+import { useAuth } from '../context/AuthContext';
 
 export const ListadoVisitas = () => {
     const navigate = useNavigate();
+    const { token } = useAuth();
 
     const [busqueda, setBusqueda] = useState('');
     const [visitas, setVisitas] = useState<any[]>([]);
@@ -14,9 +16,8 @@ export const ListadoVisitas = () => {
     const [error, setError] = useState<string | null>(null);
 
     const fetchHistorial = async () => {
-        const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://localhost:3000/api/visitas/historial', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visitas/historial`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -43,9 +44,8 @@ export const ListadoVisitas = () => {
 
         if (motivo === null) return;
 
-        const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`http://localhost:3000/api/visitas/${id}/cancelar`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visitas/${id}/cancelar`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

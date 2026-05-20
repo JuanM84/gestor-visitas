@@ -25,9 +25,12 @@ export const AuthService = {
         }
 
         // 3. Generamos el Token JWT
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET no definido en variables de entorno');
+
         const token = jwt.sign(
             { id: usuario.id, rol: usuario.rol, nombre: usuario.nombre },
-            process.env.JWT_SECRET || 'secreto_fallback',
+            secret,
             { expiresIn: '8h' } // El token dura una jornada laboral
         );
 

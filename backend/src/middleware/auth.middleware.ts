@@ -7,11 +7,7 @@ export interface AuthRequest extends Request {
 
 export const verificarToken = (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
-    const headerToken = authHeader && authHeader.split(' ')[1];
-
-    const queryToken = req.query.token as string;
-
-    const token = headerToken || queryToken;
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
         return res.status(401).json({
@@ -19,10 +15,14 @@ export const verificarToken = (req: AuthRequest, res: Response, next: NextFuncti
         });
     }
 
-    try {
-        const secret = process.env.JWT_SECRET || 'secreto_fallback';
-        const decoded = jwt.verify(token, secret);
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        console.error('FATAL: JWT_SECRET no está definido en las variables de entorno.');
+        return res.status(500).json({ error: 'Error de configuración del servidor.' });
+    }
 
+    try {
+        const decoded = jwt.verify(token, secret);
         req.usuario = decoded;
         next();
     } catch (error) {
@@ -43,4 +43,4 @@ export const verificarRol = (rolesPermitidos: string[]) => {
         }
         next();
     };
-};
+};

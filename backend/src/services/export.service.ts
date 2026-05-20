@@ -91,7 +91,7 @@ export const ExportService = {
                 table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
                 th { background-color: #f0f9ff; color: #0369a1; text-align: left; padding: 12px 8px; border-bottom: 2px solid #bae6fd; }
                 td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; }
-                .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; font-bold: true; }
+                .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; }
                 .badge-si { background-color: #dcfce7; color: #166534; }
                 .badge-no { background-color: #f1f5f9; color: #64748b; }
                 .summary { margin-top: 30px; float: right; width: 250px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; }

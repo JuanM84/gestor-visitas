@@ -4,10 +4,12 @@ import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
 import { TIPOS_VISITA } from '../utils/visitaTypes';
 import { ESTADOS_VISITA, BADGE_ESTADO } from '../utils/visitaTypes';
+import { useAuth } from '../context/AuthContext';
 
 export const EditarVisita = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { token } = useAuth();
 
     // 1. Ampliamos el estado para incluir los nuevos campos
     const [formData, setFormData] = useState({
@@ -27,9 +29,8 @@ export const EditarVisita = () => {
 
     useEffect(() => {
         const fetchVisita = async () => {
-            const token = localStorage.getItem('token');
             try {
-                const response = await fetch(`http://localhost:3000/api/visitas/${id}`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visitas/${id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('No se pudo cargar la visita');
@@ -60,7 +61,6 @@ export const EditarVisita = () => {
         e.preventDefault();
         setSaving(true);
         setError(null);
-        const token = localStorage.getItem('token');
 
         // Si desmarcan accesibilidad, limpiamos el detalle por las dudas
         const dataToSend = {
@@ -69,7 +69,7 @@ export const EditarVisita = () => {
         };
 
         try {
-            const response = await fetch(`http://localhost:3000/api/visitas/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visitas/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

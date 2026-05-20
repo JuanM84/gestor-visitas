@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 export const DashboardAdmin = () => {
+    const { token } = useAuth();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [mesActual, setMesActual] = useState(new Date().getMonth() + 1);
     const [anioActual, setAnioActual] = useState(new Date().getFullYear());
 
-    const token = localStorage.getItem('token');
     const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     useEffect(() => {
         const fetchStats = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`http://localhost:3000/api/estadisticas/admin?mes=${mesActual}&anio=${anioActual}`, {
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/estadisticas/admin?mes=${mesActual}&anio=${anioActual}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -39,10 +40,23 @@ export const DashboardAdmin = () => {
         else { setMesActual(mesActual + 1); }
     };
 
-    const handleExportar = () => {
-        const token = localStorage.getItem('token');
-        const url = `http://localhost:3000/api/estadisticas/exportar?mes=${mesActual}&anio=${anioActual}&token=${token}`;
-        window.open(url, '_blank');
+    const handleExportar = async () => {
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/estadisticas/exportar?mes=${mesActual}&anio=${anioActual}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            if (!response.ok) throw new Error('Error al generar el reporte');
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte_${mesActual}_${anioActual}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error exportando:', err);
+        }
     };
 
     if (loading || !stats) return <div className="p-10 text-center animate-pulse">Cargando métricas gerenciales...</div>;

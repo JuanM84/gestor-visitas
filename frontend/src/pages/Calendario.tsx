@@ -28,7 +28,7 @@ export const Calendario = () => {
         const fetchDatosCalendario = async () => {
             setLoading(true);
             try {
-                const response = await fetch(`http://localhost:3000/api/visitas/calendario?anio=${anio}&mes=${mes + 1}`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visitas/calendario?anio=${anio}&mes=${mes + 1}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -71,7 +71,7 @@ export const Calendario = () => {
 
         try {
             // Usamos la ruta del Dashboard que ya teníamos creada
-            const response = await fetch(`http://localhost:3000/api/visitas?fecha=${fechaStr}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visitas?fecha=${fechaStr}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

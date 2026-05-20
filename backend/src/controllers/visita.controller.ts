@@ -45,14 +45,16 @@ export const VisitaController = {
             });
 
         } catch (error: any) {
-            console.error('Error en crearVisita:', error.message);
+            console.error('Error en crearVisita:', error.message, error.detail || '', error.constraint || '');
             res.status(400).json({ error: error.message || 'Error al procesar la solicitud' });
         }
     },
 
     async getHistorial(req: Request, res: Response) {
         try {
-            const historial = await VisitaService.obtenerHistorial();
+            const page = parseInt(req.query.page as string) || 1;
+            const pageSize = parseInt(req.query.pageSize as string) || 50;
+            const historial = await VisitaService.obtenerHistorial(page, pageSize);
             res.status(200).json(historial);
         } catch (error: any) {
             res.status(500).json({ error: 'Error al obtener el historial de visitas' });
