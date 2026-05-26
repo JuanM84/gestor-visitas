@@ -11,6 +11,8 @@ export const ListadoVisitas = () => {
 
     const [busqueda, setBusqueda] = useState('');
     const [visitas, setVisitas] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchHistorial = async () => {
         try {
