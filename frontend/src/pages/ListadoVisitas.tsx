@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
 import * as XLSX from 'xlsx';
 import { cn } from '../utils/cn';
 import { BADGE_ESTADO } from '../utils/visitaTypes';
@@ -12,8 +11,6 @@ export const ListadoVisitas = () => {
 
     const [busqueda, setBusqueda] = useState('');
     const [visitas, setVisitas] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
     const fetchHistorial = async () => {
         try {

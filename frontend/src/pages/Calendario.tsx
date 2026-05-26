@@ -237,7 +237,6 @@ export const Calendario = () => {
                                 <div className="flex flex-col gap-4">
                                     {visitasDelDia.map((visita: any) => {
                                         const esCancelada = visita.estado === 'Cancelada';
-                                        const esAgendada  = visita.estado === 'Agendada';
                                         return (
                                         <div key={visita.id} className={cn(
                                             "p-4 border rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white transition-colors",
