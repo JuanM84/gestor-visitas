@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const estadisticas_controller_1 = require("../controllers/estadisticas.controller");
+const export_controller_1 = require("../controllers/export.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.get('/admin', auth_middleware_1.verificarToken, estadisticas_controller_1.EstadisticasController.getAdminDashboard);
+router.get('/rango', auth_middleware_1.verificarToken, estadisticas_controller_1.EstadisticasController.getStatsByRango);
+router.get('/exportar', auth_middleware_1.verificarToken, export_controller_1.ExportController.exportarMensual);
+exports.default = router;
