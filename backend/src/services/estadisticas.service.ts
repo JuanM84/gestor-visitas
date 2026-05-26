@@ -36,6 +36,40 @@ export const EstadisticasService = {
         `;
         const evolucionResult = await pool.query(evolucionQuery, [mes, anio]);
 
+        // Distribución por tipo de visitante (Institución / Particulares)
+        const distribucionTipoQuery = `
+            SELECT
+                gr.tipo_visitante,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE EXTRACT(MONTH FROM v.fecha) = $1
+              AND EXTRACT(YEAR FROM v.fecha) = $2
+              AND v.estado != 'Cancelada'
+            GROUP BY gr.tipo_visitante
+            ORDER BY total_personas DESC
+        `;
+        const distribucionTipoResult = await pool.query(distribucionTipoQuery, [mes, anio]);
+
+        // Desglose por nivel educativo (solo Instituciones)
+        const desglosePorNivelQuery = `
+            SELECT
+                gr.nivel_educativo,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE EXTRACT(MONTH FROM v.fecha) = $1
+              AND EXTRACT(YEAR FROM v.fecha) = $2
+              AND v.estado != 'Cancelada'
+              AND gr.tipo_visitante = 'Institución'
+              AND gr.nivel_educativo IS NOT NULL
+            GROUP BY gr.nivel_educativo
+            ORDER BY total_personas DESC
+        `;
+        const desglosePorNivelResult = await pool.query(desglosePorNivelQuery, [mes, anio]);
+
         return {
             kpis: {
                 visitas: parseInt(kpis.total_visitas),
@@ -44,7 +78,9 @@ export const EstadisticasService = {
                 cruces: parseInt(kpis.total_cruces)
             },
             rankingGestores: rankingResult.rows,
-            evolucion: evolucionResult.rows
+            evolucion: evolucionResult.rows,
+            distribucionTipo: distribucionTipoResult.rows,
+            desglosePorNivel: desglosePorNivelResult.rows
         };
     }
 };

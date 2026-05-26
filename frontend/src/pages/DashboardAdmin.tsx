@@ -166,6 +166,105 @@ export const DashboardAdmin = () => {
                 </div>
 
             </div>
+
+            {/* 4. Distribución de Grupos */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+
+                {/* 4a. Tipo de visitante: Institución vs Particulares */}
+                <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className="material-symbols-outlined text-primary">pie_chart</span>
+                        <h3 className="font-h3">Tipo de Visitante</h3>
+                    </div>
+                    {!stats.distribucionTipo || stats.distribucionTipo.length === 0 ? (
+                        <div className="text-center text-outline py-10">Sin registros para este mes.</div>
+                    ) : (() => {
+                        const total = stats.distribucionTipo.reduce((acc: number, t: any) => acc + parseInt(t.total_personas), 0);
+                        const colores: Record<string, string> = {
+                            'Institución': 'bg-primary',
+                            'Particulares': 'bg-secondary',
+                        };
+                        const coloresTexto: Record<string, string> = {
+                            'Institución': 'text-primary',
+                            'Particulares': 'text-secondary',
+                        };
+                        return (
+                            <div className="space-y-5">
+                                {stats.distribucionTipo.map((tipo: any, i: number) => {
+                                    const pct = total > 0 ? Math.round((parseInt(tipo.total_personas) / total) * 100) : 0;
+                                    const color = colores[tipo.tipo_visitante] || 'bg-outline';
+                                    const colorTxt = coloresTexto[tipo.tipo_visitante] || 'text-outline';
+                                    return (
+                                        <div key={i}>
+                                            <div className="flex justify-between items-center mb-1.5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`material-symbols-outlined text-[18px] ${colorTxt}`}>
+                                                        {tipo.tipo_visitante === 'Institución' ? 'school' : 'group'}
+                                                    </span>
+                                                    <span className="font-semibold text-on-surface text-sm">{tipo.tipo_visitante}</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className={`font-black text-sm ${colorTxt}`}>{pct}%</span>
+                                                    <span className="text-xs text-outline ml-2">({tipo.total_personas} personas · {tipo.cantidad_visitas} visitas)</span>
+                                                </div>
+                                            </div>
+                                            <div className="h-3 bg-surface-container rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full ${color} rounded-full transition-all duration-500`}
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <p className="text-xs text-outline text-right pt-2 border-t border-outline-variant">
+                                    Total del mes: <span className="font-bold text-on-surface">{total} personas</span>
+                                </p>
+                            </div>
+                        );
+                    })()}
+                </div>
+
+                {/* 4b. Desglose por nivel educativo (solo instituciones) */}
+                <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className="material-symbols-outlined text-primary">school</span>
+                        <h3 className="font-h3">Nivel Educativo</h3>
+                        <span className="text-xs text-outline ml-1">(solo instituciones)</span>
+                    </div>
+                    {!stats.desglosePorNivel || stats.desglosePorNivel.length === 0 ? (
+                        <div className="text-center text-outline py-10">Sin visitas institucionales este mes.</div>
+                    ) : (() => {
+                        const maxNivel = Math.max(...stats.desglosePorNivel.map((n: any) => parseInt(n.total_personas)));
+                        const paleta = ['bg-blue-500', 'bg-violet-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
+                        return (
+                            <div className="space-y-4">
+                                {stats.desglosePorNivel.map((nivel: any, i: number) => {
+                                    const pct = maxNivel > 0 ? Math.round((parseInt(nivel.total_personas) / maxNivel) * 100) : 0;
+                                    return (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <div className="w-24 text-xs font-semibold text-on-surface-variant text-right shrink-0 truncate" title={nivel.nivel_educativo}>
+                                                {nivel.nivel_educativo}
+                                            </div>
+                                            <div className="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full ${paleta[i % paleta.length]} rounded-full transition-all duration-500`}
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="font-black text-on-surface text-sm">{nivel.total_personas}</span>
+                                                <span className="text-[10px] text-outline ml-1">pers.</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+                </div>
+
+            </div>
         </div>
     );
 };

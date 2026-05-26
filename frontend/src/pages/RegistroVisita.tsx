@@ -74,7 +74,7 @@ export const RegistroVisita = () => {
     const [visita, setVisita] = useState({
         fecha: fechaInicial,
         hora_inicio: horaInicial,
-        tipo: 'Complejo',
+        tipo: 'Salón de visitas',
         tiene_cruce_tunel: false,
         cantidad_personas: '',
         tiene_discapacidad: false,
@@ -542,7 +542,13 @@ export const RegistroVisita = () => {
                             <button
                                 key={tipo}
                                 type="button"
-                                onClick={() => setTipoVisitante(tipo)}
+                                onClick={() => {
+                                    setTipoVisitante(tipo);
+                                    // Si cambia a Particulares, el cruce siempre es false
+                                    if (tipo === 'Particulares') {
+                                        setVisita(v => ({ ...v, tiene_cruce_tunel: false }));
+                                    }
+                                }}
                                 className={cn(
                                     'px-5 py-2 rounded-lg text-sm font-bold transition-all',
                                     tipoVisitante === tipo
@@ -738,10 +744,28 @@ export const RegistroVisita = () => {
                         </div>
 
                         <div className="flex flex-col gap-3 pt-2">
-                            <label className={cn('flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-all', visita.tiene_cruce_tunel ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-outline-variant text-on-surface-variant')}>
-                                <input type="checkbox" className="w-4 h-4 accent-amber-500" checked={visita.tiene_cruce_tunel} onChange={e => setVisita({ ...visita, tiene_cruce_tunel: e.target.checked })} />
+                            <label className={cn(
+                                'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all',
+                                tipoVisitante === 'Particulares'
+                                    ? 'border-outline-variant/50 bg-surface-container-low text-on-surface-variant/40 cursor-not-allowed opacity-60'
+                                    : visita.tiene_cruce_tunel
+                                        ? 'border-amber-400 bg-amber-50 text-amber-700 cursor-pointer'
+                                        : 'border-outline-variant text-on-surface-variant cursor-pointer'
+                            )}>
+                                <input
+                                    type="checkbox"
+                                    className="w-4 h-4 accent-amber-500"
+                                    checked={visita.tiene_cruce_tunel}
+                                    disabled={tipoVisitante === 'Particulares'}
+                                    onChange={e => setVisita({ ...visita, tiene_cruce_tunel: e.target.checked })}
+                                />
                                 <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
                                 Realiza cruce del túnel
+                                {tipoVisitante === 'Particulares' && (
+                                    <span className="ml-auto text-[10px] font-bold bg-outline-variant/30 text-on-surface-variant/60 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                                        N/A Particulares
+                                    </span>
+                                )}
                             </label>
                             <label className={cn('flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-all', visita.tiene_discapacidad ? 'border-secondary bg-secondary/5 text-secondary' : 'border-outline-variant text-on-surface-variant')}>
                                 <input type="checkbox" className="w-4 h-4 accent-secondary" checked={visita.tiene_discapacidad} onChange={e => setVisita({ ...visita, tiene_discapacidad: e.target.checked })} />

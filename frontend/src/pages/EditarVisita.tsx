@@ -17,7 +17,7 @@ export const EditarVisita = () => {
         hora_inicio: '',
         cantidad_personas: 0,
         estado: '',
-        tipo: 'Complejo',
+        tipo: 'Salón de visitas',
         tiene_cruce_tunel: false,
         tiene_discapacidad: false,
         discapacidad_detalle: ''
@@ -43,7 +43,7 @@ export const EditarVisita = () => {
                     hora_inicio: data.hora_inicio.slice(0, 5), // Cortamos a HH:MM para el input time
                     cantidad_personas: data.cantidad_personas,
                     estado: data.estado,
-                    tipo: data.tipo || 'Complejo',
+                    tipo: data.tipo || 'Salón de visitas',
                     tiene_cruce_tunel: data.tiene_cruce_tunel || false,
                     tiene_discapacidad: data.tiene_discapacidad || false,
                     discapacidad_detalle: data.discapacidad_detalle || ''

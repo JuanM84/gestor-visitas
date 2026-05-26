@@ -6,6 +6,7 @@ export const Gestores = () => {
     const [gestores, setGestores] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [errorLista, setErrorLista] = useState<string | null>(null);
+    const [gestorSeleccionado, setGestorSeleccionado] = useState<any | null>(null);
 
     // Estado para el formulario
     const [formData, setFormData] = useState({
@@ -63,7 +64,7 @@ export const Gestores = () => {
 
             setMensajeForm({ tipo: 'exito', texto: 'Gestor registrado correctamente.' });
             setFormData({ nombre: '', tipo: 'Institución Educativa', telefono: '', email: '', localidad: '', provincia: '', pais: 'Argentina' });
-            fetchGestores(); // Recargamos la tabla
+            fetchGestores();
         } catch (err: any) {
             setMensajeForm({ tipo: 'error', texto: err.message });
         } finally {
@@ -74,6 +75,61 @@ export const Gestores = () => {
 
     return (
         <div className="flex flex-col max-w-[1200px] w-full mx-auto">
+
+            {/* ── Modal de datos del gestor ── */}
+            {gestorSeleccionado && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        {/* Header */}
+                        <div className="bg-primary px-6 py-5 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-white text-[22px]">contact_page</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-white text-base leading-tight truncate">{gestorSeleccionado.nombre}</h3>
+                                <p className="text-white/70 text-xs mt-0.5">{gestorSeleccionado.tipo || 'Gestor'}</p>
+                            </div>
+                            <button
+                                onClick={() => setGestorSeleccionado(null)}
+                                className="p-1 rounded-full hover:bg-white/20 text-white transition-colors shrink-0"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        {/* Cuerpo */}
+                        <div className="p-6 space-y-4">
+                            {[
+                                { icon: 'badge', label: 'Nombre', value: gestorSeleccionado.nombre },
+                                { icon: 'category', label: 'Tipo', value: gestorSeleccionado.tipo },
+                                { icon: 'domain', label: 'Empresa / Institución', value: gestorSeleccionado.empresa_institucion },
+                                { icon: 'call', label: 'Teléfono', value: gestorSeleccionado.telefono },
+                                { icon: 'mail', label: 'Email', value: gestorSeleccionado.email },
+                                { icon: 'location_on', label: 'Localidad', value: gestorSeleccionado.localidad },
+                                { icon: 'map', label: 'Provincia', value: gestorSeleccionado.provincia },
+                                { icon: 'public', label: 'País', value: gestorSeleccionado.pais },
+                            ].map(({ icon, label, value }) =>
+                                value ? (
+                                    <div key={label} className="flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-[18px] text-primary mt-0.5 shrink-0">{icon}</span>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{label}</p>
+                                            <p className="text-sm text-on-surface font-medium">{value}</p>
+                                        </div>
+                                    </div>
+                                ) : null
+                            )}
+                        </div>
+
+                        <div className="px-6 pb-5">
+                            <Button variant="outline" className="w-full" onClick={() => setGestorSeleccionado(null)}>
+                                Cerrar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="mb-lg">
                 <h1 className="font-h1 text-h1 text-on-surface">Directorio de Gestores</h1>
                 <p className="font-body-md text-on-surface-variant mt-2">Administre las instituciones, escuelas y agencias que realizan visitas al túnel.</p>
@@ -157,15 +213,16 @@ export const Gestores = () => {
                                     <th className="p-4 font-label-md">Tipo</th>
                                     <th className="p-4 font-label-md">Ubicación</th>
                                     <th className="p-4 font-label-md">Contacto</th>
+                                    <th className="p-4 font-label-md w-14"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-surface-container-highest">
                                 {loading ? (
-                                    <tr><td colSpan={3} className="p-8 text-center text-outline">Cargando directorio...</td></tr>
+                                    <tr><td colSpan={5} className="p-8 text-center text-outline">Cargando directorio...</td></tr>
                                 ) : errorLista ? (
-                                    <tr><td colSpan={3} className="p-8 text-center text-error">{errorLista}</td></tr>
+                                    <tr><td colSpan={5} className="p-8 text-center text-error">{errorLista}</td></tr>
                                 ) : gestores.length === 0 ? (
-                                    <tr><td colSpan={3} className="p-8 text-center text-on-surface-variant">No hay gestores registrados en el sistema.</td></tr>
+                                    <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">No hay gestores registrados en el sistema.</td></tr>
                                 ) : (
                                     gestores.map((gestor) => (
                                         <tr key={gestor.id} className="hover:bg-surface-bright transition-colors">
@@ -189,10 +246,17 @@ export const Gestores = () => {
                                                     {gestor.telefono || 'Sin teléfono'}
                                                 </div>
                                                 {gestor.email && (
-                                                    <div className="text-xs text-outline mt-0.5">
-                                                        {gestor.email}
-                                                    </div>
+                                                    <div className="text-xs text-outline mt-0.5">{gestor.email}</div>
                                                 )}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <button
+                                                    onClick={() => setGestorSeleccionado(gestor)}
+                                                    title="Ver datos completos"
+                                                    className="p-2 hover:bg-primary/10 rounded-full text-primary transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-[20px]">info</span>
+                                                </button>
                                             </td>
                                         </tr>
                                     ))

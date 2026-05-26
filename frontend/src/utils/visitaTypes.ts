@@ -1,5 +1,5 @@
 // Tipos de visita permitidos en el sistema (debe coincidir con el backend)
-export const TIPOS_VISITA = ['Complejo', 'Complejo + Monitoreo'] as const;
+export const TIPOS_VISITA = ['Salón de visitas', 'Salón + Sala de Comando'] as const;
 export type TipoVisita = typeof TIPOS_VISITA[number];
 
 export const esTipoVisitaValido = (tipo: string): tipo is TipoVisita =>
