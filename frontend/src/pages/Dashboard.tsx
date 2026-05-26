@@ -13,38 +13,52 @@ export const Dashboard = () => {
 
     const [visitas, setVisitas] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [diaInhabil, setDiaInhabil] = useState<{ esInhabil: boolean; descripcion: string }>({ esInhabil: false, descripcion: '' });
 
     // 2. Cada vez que la fecha cambie, actualizamos la URL y traemos los datos
     useEffect(() => {
-        // Actualizamos la URL sin recargar la página (usamos replace para no llenar el historial del navegador)
         setSearchParams({ fecha: fechaSeleccionada }, { replace: true });
 
-        const fetchVisitas = async () => {
+        const fetchDatos = async () => {
             setLoading(true);
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visitas?fecha=${fechaSeleccionada}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const result = await response.json();
+                const headers = { 'Authorization': `Bearer ${token}` };
+
+                // Traemos visitas y días inhábiles en paralelo
+                const [resVisitas, resDias] = await Promise.all([
+                    fetch(`${import.meta.env.VITE_API_URL}/api/visitas?fecha=${fechaSeleccionada}`, { headers }),
+                    fetch(`${import.meta.env.VITE_API_URL}/api/dias-inhabiles`, { headers }),
+                ]);
+
+                if (resVisitas.ok) {
+                    const result = await resVisitas.json();
                     setVisitas(result.data || []);
                 }
+
+                if (resDias.ok) {
+                    const dias: any[] = await resDias.json();
+                    const encontrado = dias.find(d => String(d.fecha).substring(0, 10) === fechaSeleccionada);
+                    setDiaInhabil(encontrado
+                        ? { esInhabil: true, descripcion: encontrado.descripcion }
+                        : { esInhabil: false, descripcion: '' }
+                    );
+                }
             } catch (error) {
-                console.error("Error al cargar visitas:", error);
+                console.error("Error al cargar datos:", error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchVisitas();
+        fetchDatos();
     }, [fechaSeleccionada, token, setSearchParams]);
 
     const cambiarFecha = (dias: number) => {
-        const nuevaFecha = new Date(fechaSeleccionada + 'T12:00:00'); // T12 para evitar bugs de zona horaria
+        const nuevaFecha = new Date(fechaSeleccionada + 'T12:00:00');
         nuevaFecha.setDate(nuevaFecha.getDate() + dias);
         setFechaSeleccionada(nuevaFecha.toISOString().split('T')[0]);
     };
 
-    // Marca una visita como Realizada (actualiza estado local sin recargar)
+    // Marca una visita como Realizada
     const [marcandoRealizada, setMarcandoRealizada] = useState<string | null>(null);
 
     const marcarRealizada = async (visitaId: string) => {
@@ -59,25 +73,22 @@ export const Dashboard = () => {
                 setVisitas(prev => prev.map(v => v.id === visitaId ? { ...v, estado: 'Realizada' } : v));
             }
         } catch {
-            // silencioso — el slot no cambia si hay error
+            // silencioso
         } finally {
             setMarcandoRealizada(null);
         }
     };
-    // Solo visitas activas (sin canceladas) — usadas en KPIs y cronograma
+
     const visitasActivas = visitas.filter(v => v.estado !== 'Cancelada');
     const totalPersonas = visitasActivas.reduce((acc, v) => acc + parseInt(v.cantidad_personas), 0);
     const totalCruces = visitasActivas.filter(v => v.tiene_cruce_tunel).length;
 
-    // Todos los slots del día: 08:00 a 17:30, cada 30 minutos (20 slots)
     const SLOTS: string[] = [];
     for (let h = 8; h <= 17; h++) {
         const hh = h < 10 ? `0${h}` : `${h}`;
         SLOTS.push(`${hh}:00`);
         SLOTS.push(`${hh}:30`);
     }
-    // Recortamos el último que sería 17:30 — ya está incluido, quitamos el que supera (18:00 no se genera porque h<=17)
-    // El bucle genera: 08:00, 08:30, ..., 17:00, 17:30 ✓
 
     return (
         <div className="flex flex-col max-w-[1200px] w-full mx-auto pb-10">
@@ -89,13 +100,15 @@ export const Dashboard = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(`/nueva-visita?fecha=${fechaSeleccionada}`)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all shadow-sm text-sm"
-                    >
-                        <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                        Agendar para este día
-                    </button>
+                    {!diaInhabil.esInhabil && (
+                        <button
+                            onClick={() => navigate(`/nueva-visita?fecha=${fechaSeleccionada}`)}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary-container transition-all shadow-sm text-sm"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                            Agendar para este día
+                        </button>
+                    )}
 
                     <div className="flex items-center gap-2 bg-surface-container-low p-1.5 rounded-xl border border-outline-variant shadow-sm">
                         <button onClick={() => cambiarFecha(-1)} className="p-2 hover:bg-surface-container rounded-lg transition-colors">
@@ -114,7 +127,20 @@ export const Dashboard = () => {
                 </div>
             </div>
 
-            {/* TARJETAS DE RESUMEN (KPIs) — solo visitas activas */}
+            {/* BANNER DÍA INHÁBIL */}
+            {diaInhabil.esInhabil && (
+                <div className="mb-6 flex items-center gap-4 p-4 bg-error-container/30 border border-error/30 rounded-2xl">
+                    <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-error">event_busy</span>
+                    </div>
+                    <div>
+                        <p className="font-bold text-error text-sm">Día Inhábil — No se pueden agendar visitas</p>
+                        <p className="text-xs text-error/80 mt-0.5">{diaInhabil.descripcion}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* TARJETAS DE RESUMEN (KPIs) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-4">
                     <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
@@ -147,16 +173,31 @@ export const Dashboard = () => {
                 </div>
             </div>
 
-            {/* CRONOGRAMA — todos los slots 08:00 a 17:30 */}
-            <div className="bg-white rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-surface-container-highest flex justify-between items-center bg-surface-container-lowest">
+            {/* CRONOGRAMA */}
+            <div className={cn(
+                "bg-white rounded-2xl border shadow-sm overflow-hidden",
+                diaInhabil.esInhabil ? "border-error/30" : "border-outline-variant"
+            )}>
+                <div className={cn(
+                    "p-6 border-b flex justify-between items-center",
+                    diaInhabil.esInhabil
+                        ? "bg-error-container/10 border-error/20"
+                        : "bg-surface-container-lowest border-surface-container-highest"
+                )}>
                     <h3 className="font-h3 text-on-surface">Cronograma de Visitas</h3>
-                    <span className="text-sm font-medium text-outline">
-                        {visitasActivas.length === 0
-                            ? 'Todos los turnos disponibles'
-                            : `${visitasActivas.length} turno${visitasActivas.length !== 1 ? 's' : ''} ocupado${visitasActivas.length !== 1 ? 's' : ''} · ${SLOTS.length - visitasActivas.length} libre${SLOTS.length - visitasActivas.length !== 1 ? 's' : ''}`
-                        }
-                    </span>
+                    {diaInhabil.esInhabil ? (
+                        <span className="flex items-center gap-1.5 text-sm font-bold text-error">
+                            <span className="material-symbols-outlined text-[18px]">lock</span>
+                            Día bloqueado
+                        </span>
+                    ) : (
+                        <span className="text-sm font-medium text-outline">
+                            {visitasActivas.length === 0
+                                ? 'Todos los turnos disponibles'
+                                : `${visitasActivas.length} turno${visitasActivas.length !== 1 ? 's' : ''} ocupado${visitasActivas.length !== 1 ? 's' : ''} · ${SLOTS.length - visitasActivas.length} libre${SLOTS.length - visitasActivas.length !== 1 ? 's' : ''}`
+                            }
+                        </span>
+                    )}
                 </div>
 
                 <div className="p-4">
@@ -203,7 +244,8 @@ export const Dashboard = () => {
                                                     <p className="text-xl font-black text-primary leading-none">{visita.cantidad_personas}</p>
                                                     <p className="text-[10px] uppercase font-bold text-outline mt-0.5">Personas</p>
                                                 </div>
-                                                {visita.estado === 'Agendada' && (
+                                                {/* Solo mostrar acciones si el día es hábil */}
+                                                {!diaInhabil.esInhabil && visita.estado === 'Agendada' && (
                                                     <button
                                                         onClick={() => marcarRealizada(visita.id)}
                                                         disabled={marcandoRealizada === visita.id}
@@ -234,6 +276,27 @@ export const Dashboard = () => {
                                 }
 
                                 // ── Slot LIBRE ──
+                                if (diaInhabil.esInhabil) {
+                                    // Día inhábil: slot no clickeable
+                                    return (
+                                        <div
+                                            key={slot}
+                                            className="flex items-center justify-between px-4 py-3 rounded-xl border border-dashed border-error/20 bg-error-container/5 opacity-60"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 rounded-xl bg-error-container/20 text-error/50 flex flex-col items-center justify-center border border-error/15 shrink-0">
+                                                    <span className="text-base font-bold leading-none">{slot}</span>
+                                                    <span className="text-[9px] uppercase font-semibold mt-0.5">HS</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-error/50">
+                                                    <span className="material-symbols-outlined text-[18px]">block</span>
+                                                    <span className="text-sm font-medium">No disponible</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
                                 return (
                                     <div
                                         key={slot}
