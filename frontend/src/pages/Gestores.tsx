@@ -156,7 +156,7 @@ export const Gestores = () => {
                                 <option value="Institución Educativa">Institución Educativa</option>
                                 <option value="Agencia de Turismo">Agencia de Turismo</option>
                                 <option value="Club / Asociación">Club / Asociación</option>
-                                <option value="Particular / Organismo">Particular / Organismo Público</option>
+                                <option value="Particular / Organismo Público">Particular / Organismo Público</option>
                             </select>
                         </div>
 
