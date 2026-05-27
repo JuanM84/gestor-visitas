@@ -7,6 +7,7 @@ export const InstitucionController = {
             const instituciones = await InstitucionService.obtenerTodas();
             res.status(200).json(instituciones);
         } catch (error: any) {
+            console.error("Error real de BD en instituciones:", error);
             res.status(500).json({ error: 'Error al obtener las instituciones' });
         }
     },
