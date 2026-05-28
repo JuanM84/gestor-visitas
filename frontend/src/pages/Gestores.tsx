@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
+import { useAuth } from '../context/AuthContext';
 
 export const Gestores = () => {
     const [gestores, setGestores] = useState<any[]>([]);
@@ -21,7 +22,7 @@ export const Gestores = () => {
     const [guardando, setGuardando] = useState(false);
     const [mensajeForm, setMensajeForm] = useState({ tipo: '', texto: '' });
 
-    const token = localStorage.getItem('token');
+    const { token } = useAuth();
     const inputStyles = "w-full h-11 px-4 rounded-lg border border-outline-variant bg-surface-bright text-on-background focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all";
 
     const fetchGestores = async () => {

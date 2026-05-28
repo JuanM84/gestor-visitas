@@ -1,5 +1,6 @@
 import { VisitaRepository } from '../repositories/visita.repository';
 import { AvailabilityService } from './disponibilidad.service';
+import { DisponibilidadRepository } from '../repositories/disponibilidad.repository';
 import { pool } from '../config/db';
 import { esTipoVisitaValido, TIPOS_VISITA, esEstadoVisitaValido, ESTADOS_VISITA } from '../types/visita.types';
 
@@ -264,14 +265,17 @@ export const VisitaService = {
     },
 
     async obtenerDatosCalendario(anio: number, mes: number) {
-        const registrosVisitas = await VisitaRepository.getAgrupadoPorMes(anio, mes);
-
-        const queryInhabiles = `
-            SELECT TO_CHAR(fecha, 'YYYY-MM-DD') as fecha_str, descripcion 
-            FROM DiaInhabil
-            WHERE EXTRACT(YEAR FROM fecha::date) = $1 AND EXTRACT(MONTH FROM fecha::date) = $2
-        `;
-        const resultInhabiles = await pool.query(queryInhabiles, [anio, mes]);
+        // Cargar en paralelo: visitas del mes, días inhábiles y capacidad máxima desde BD
+        const [registrosVisitas, resultInhabiles, capacidadMaxima] = await Promise.all([
+            VisitaRepository.getAgrupadoPorMes(anio, mes),
+            pool.query(
+                `SELECT TO_CHAR(fecha, 'YYYY-MM-DD') as fecha_str, descripcion 
+                 FROM DiaInhabil
+                 WHERE EXTRACT(YEAR FROM fecha::date) = $1 AND EXTRACT(MONTH FROM fecha::date) = $2`,
+                [anio, mes]
+            ),
+            DisponibilidadRepository.obtenerCapacidadMaxima(),
+        ]);
         const diasInhabiles = resultInhabiles.rows;
 
         const calendarioMensual: Record<number, any> = {};
@@ -279,9 +283,9 @@ export const VisitaService = {
         registrosVisitas.forEach((reg: any) => {
             const dia = parseInt(reg.fecha_str.split('-')[2], 10);
             const totalPersonas = parseInt(reg.total_personas, 10);
-            let estado = 'parcial';
-            let texto = 'Slots Disponibles';
-            if (totalPersonas >= 300) { estado = 'lleno'; texto = 'Alta Ocupación'; }
+            // Estado dinámico: usa la capacidad máxima configurada en BD
+            const estado = totalPersonas >= capacidadMaxima ? 'lleno' : 'parcial';
+            const texto  = totalPersonas >= capacidadMaxima ? 'Alta Ocupación' : 'Slots Disponibles';
             calendarioMensual[dia] = { visitas: totalPersonas, grupos: reg.total_grupos, estado, texto };
         });
 
@@ -338,7 +342,8 @@ export const VisitaService = {
             throw new Error(`Estado inválido. Los valores permitidos son: ${ESTADOS_VISITA.join(', ')}`);
         }
 
-        const nuevaFecha = datos.fecha ?? visitaActual.fecha.toISOString().split('T')[0];
+        // 'fr-CA' devuelve YYYY-MM-DD respetando timezone local, evita el bug UTC-3
+        const nuevaFecha = datos.fecha ?? new Date(visitaActual.fecha).toLocaleDateString('fr-CA');
         const nuevaHora = datos.hora_inicio ?? visitaActual.hora_inicio;
         const nuevaCantidad = datos.cantidad_personas ?? visitaActual.cantidad_personas;
 
@@ -366,6 +371,18 @@ export const VisitaService = {
             }
         }
 
-        return await VisitaRepository.updateVisita(id, datos);
+        // Sin cambio de estado: update igualmente dentro de una transacción
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const visitaActualizada = await VisitaRepository.updateVisita(id, datos);
+            await client.query('COMMIT');
+            return visitaActualizada;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 };

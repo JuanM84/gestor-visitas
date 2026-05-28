@@ -83,8 +83,10 @@ export const VisitaController = {
             const visita = await VisitaService.cancelarVisita(String(id), usuarioId, motivo);
             res.status(200).json({ mensaje: 'Visita cancelada exitosamente', visita });
         } catch (error: any) {
-            const isNotFound = error.message === 'Visita no encontrada';
-            res.status(isNotFound ? 404 : 500).json({ error: error.message });
+            const status =
+                error.message === 'Visita no encontrada'           ? 404 :
+                error.message === 'La visita ya se encuentra cancelada' ? 409 : 500;
+            res.status(status).json({ error: error.message });
         }
     },
 
