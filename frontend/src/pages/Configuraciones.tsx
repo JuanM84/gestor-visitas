@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
+import { useAuth } from '../context/AuthContext';
 
 export const Configuraciones = () => {
     // --- Estados para Parámetros Generales ---
@@ -14,7 +15,7 @@ export const Configuraciones = () => {
     const [loadingDias, setLoadingDias] = useState(false);
     const [errorDias, setErrorDias] = useState<string | null>(null);
 
-    const token = localStorage.getItem('token');
+    const { token } = useAuth();
     const inputStyles = "w-full h-11 px-4 rounded-lg border border-outline-variant bg-surface-bright text-on-background focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition-all";
 
     // --- Efecto de carga inicial ---

@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { cn } from '../utils/cn';
+import { useAuth } from '../context/AuthContext';
 
 export const Auditoria = () => {
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const { token } = useAuth();
+
     useEffect(() => {
         const fetchLogs = async () => {
-            const token = localStorage.getItem('token');
             try {
                 const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auditoria?limite=200`, {
                     headers: { 'Authorization': `Bearer ${token}` }

@@ -3,6 +3,7 @@ import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
 import { Link } from 'react-router-dom';
 import { BADGE_ESTADO } from '../utils/visitaTypes';
+import { useAuth } from '../context/AuthContext';
 
 export const Calendario = () => {
     const [fechaActual, setFechaActual] = useState(new Date());
@@ -14,7 +15,7 @@ export const Calendario = () => {
     const [visitasDelDia, setVisitasDelDia] = useState<any[]>([]);
     const [loadingVisitas, setLoadingVisitas] = useState(false);
 
-    const token = localStorage.getItem('token');
+    const { token } = useAuth();
     const anio = fechaActual.getFullYear();
     const mes = fechaActual.getMonth();
 
