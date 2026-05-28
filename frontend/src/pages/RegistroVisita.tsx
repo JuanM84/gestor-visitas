@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button';
 import { TIPOS_VISITA } from '../utils/visitaTypes';
 import { cn } from '../utils/cn';
 import { useAuth } from '../context/AuthContext';
+import { UbicacionSelector } from '../components/ui/UbicacionSelector';
 
 // Sincronizado con el backend — visita.service.ts
 const NIVELES_EDUCATIVOS = ['Infantes', 'Primario', 'Secundario', 'Terciario', 'Universitario', 'Adultos Mayores'];
@@ -387,28 +388,14 @@ export const RegistroVisita = () => {
                                 <label className="text-xs font-bold text-outline uppercase">Empresa / Institución</label>
                                 <input className={inp} placeholder="Ej: Escuela Nº 5 de Paraná" value={nuevoGestor.empresa_institucion} onChange={e => setNuevoGestor({ ...nuevoGestor, empresa_institucion: e.target.value })} />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-xs font-bold text-outline uppercase">Teléfono</label>
-                                    <input className={inp} placeholder="0343-4000000" value={nuevoGestor.telefono} onChange={e => setNuevoGestor({ ...nuevoGestor, telefono: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-outline uppercase">Email</label>
-                                    <input type="email" className={inp} placeholder="gestor@mail.com" value={nuevoGestor.email} onChange={e => setNuevoGestor({ ...nuevoGestor, email: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-outline uppercase">Localidad</label>
-                                    <input className={inp} placeholder="Paraná" value={nuevoGestor.localidad} onChange={e => setNuevoGestor({ ...nuevoGestor, localidad: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-outline uppercase">Provincia</label>
-                                    <input className={inp} placeholder="Entre Ríos" value={nuevoGestor.provincia} onChange={e => setNuevoGestor({ ...nuevoGestor, provincia: e.target.value })} />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="text-xs font-bold text-outline uppercase">País</label>
-                                    <input className={inp} placeholder="Argentina" value={nuevoGestor.pais} onChange={e => setNuevoGestor({ ...nuevoGestor, pais: e.target.value })} />
-                                </div>
-                            </div>
+                        </div>
+                        <UbicacionSelector
+                            value={{ localidad: nuevoGestor.localidad, provincia: nuevoGestor.provincia, pais: nuevoGestor.pais }}
+                            onChange={({ localidad, provincia, pais }) =>
+                                setNuevoGestor({ ...nuevoGestor, localidad, provincia, pais })
+                            }
+                            inputClassName="h-10 text-sm"
+                        />
                         </div>
                         <div className="flex justify-end gap-3 pt-2">
                             <Button variant="outline" type="button" onClick={() => setModalGestor(false)}>Cancelar</Button>
@@ -435,19 +422,14 @@ export const RegistroVisita = () => {
                                 <label className="text-xs font-bold text-outline uppercase">Email institucional</label>
                                 <input type="email" className={inp} value={nuevaInstitucion.email} onChange={e => setNuevaInstitucion({ ...nuevaInstitucion, email: e.target.value })} />
                             </div>
-                            <div>
-                                <label className="text-xs font-bold text-outline uppercase">Localidad</label>
-                                <input className={inp} value={nuevaInstitucion.localidad} onChange={e => setNuevaInstitucion({ ...nuevaInstitucion, localidad: e.target.value })} />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-outline uppercase">Provincia</label>
-                                <input className={inp} value={nuevaInstitucion.provincia} onChange={e => setNuevaInstitucion({ ...nuevaInstitucion, provincia: e.target.value })} />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="text-xs font-bold text-outline uppercase">País</label>
-                                <input className={inp} placeholder="Argentina" value={nuevaInstitucion.pais} onChange={e => setNuevaInstitucion({ ...nuevaInstitucion, pais: e.target.value })} />
-                            </div>
                         </div>
+                        <UbicacionSelector
+                            value={{ localidad: nuevaInstitucion.localidad, provincia: nuevaInstitucion.provincia, pais: nuevaInstitucion.pais }}
+                            onChange={({ localidad, provincia, pais }) =>
+                                setNuevaInstitucion({ ...nuevaInstitucion, localidad, provincia, pais })
+                            }
+                            inputClassName="h-10 text-sm"
+                        />
                         <div className="flex justify-end gap-3 pt-2">
                             <Button variant="outline" type="button" onClick={() => setModalInstitucion(false)}>Cancelar</Button>
                             <Button variant="primary" type="button" onClick={handleGuardarInstitucion} disabled={!nuevaInstitucion.nombre}>Guardar Institución</Button>
@@ -684,17 +666,15 @@ export const RegistroVisita = () => {
                                     <label className="text-xs font-bold uppercase text-outline">Email *</label>
                                     <input required type="email" className={inp} placeholder="contacto@mail.com" value={particulares.email} onChange={e => setParticulares({ ...particulares, email: e.target.value })} />
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold uppercase text-outline">Localidad *</label>
-                                    <input required className={inp} placeholder="Paraná" value={particulares.localidad} onChange={e => setParticulares({ ...particulares, localidad: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold uppercase text-outline">Provincia *</label>
-                                    <input required className={inp} placeholder="Entre Ríos" value={particulares.provincia} onChange={e => setParticulares({ ...particulares, provincia: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold uppercase text-outline">País *</label>
-                                    <input required className={inp} placeholder="Argentina" value={particulares.pais} onChange={e => setParticulares({ ...particulares, pais: e.target.value })} />
+                                <div className="md:col-span-2">
+                                    <UbicacionSelector
+                                        value={{ localidad: particulares.localidad, provincia: particulares.provincia, pais: particulares.pais }}
+                                        onChange={({ localidad, provincia, pais }) =>
+                                            setParticulares({ ...particulares, localidad, provincia, pais })
+                                        }
+                                        required
+                                        inputClassName="h-10 text-sm"
+                                    />
                                 </div>
                             </div>
                         </div>

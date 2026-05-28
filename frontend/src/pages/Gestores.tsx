@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
 import { useAuth } from '../context/AuthContext';
+import { UbicacionSelector } from '../components/ui/UbicacionSelector';
 
 export const Gestores = () => {
     const [gestores, setGestores] = useState<any[]>([]);
@@ -171,21 +172,12 @@ export const Gestores = () => {
                             <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={inputStyles} placeholder="contacto@institucion.edu.ar" />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="font-label-sm block mb-1">Localidad</label>
-                                <input type="text" value={formData.localidad} onChange={(e) => setFormData({ ...formData, localidad: e.target.value })} className={inputStyles} placeholder="Ej: Paraná" />
-                            </div>
-                            <div>
-                                <label className="font-label-sm block mb-1">Provincia</label>
-                                <input type="text" value={formData.provincia} onChange={(e) => setFormData({ ...formData, provincia: e.target.value })} className={inputStyles} placeholder="Ej: Entre Ríos" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="font-label-sm block mb-1">País</label>
-                            <input type="text" value={formData.pais} onChange={(e) => setFormData({ ...formData, pais: e.target.value })} className={inputStyles} placeholder="Ej: Argentina" />
-                        </div>
+                        <UbicacionSelector
+                            value={{ localidad: formData.localidad, provincia: formData.provincia, pais: formData.pais }}
+                            onChange={({ localidad, provincia, pais }) =>
+                                setFormData({ ...formData, localidad, provincia, pais })
+                            }
+                        />
 
                         {mensajeForm.texto && (
                             <div className={`p-3 rounded-lg text-sm font-medium ${mensajeForm.tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`}>
