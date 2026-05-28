@@ -1,5 +1,37 @@
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import { pool } from '../config/db';
+
+/**
+ * Obtiene el ejecutable de Chromium correcto según el entorno.
+ * - En producción (Render/Linux): usa @sparticuz/chromium (binario precompilado).
+ * - En desarrollo (Windows/Mac): usa el Chrome local del sistema.
+ */
+async function getBrowserInstance() {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (isProduction) {
+        return puppeteer.launch({
+            args: chromium.args,
+            defaultViewport: null,
+            executablePath: await chromium.executablePath(),
+            headless: true,
+        });
+    } else {
+        // En Windows local, busca Chrome en las rutas más comunes
+        const localChromePaths = [
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        ];
+        return puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            executablePath: localChromePaths.find(p => {
+                try { require('fs').accessSync(p); return true; } catch { return false; }
+            }),
+            headless: true,
+        });
+    }
+}
 
 export const ExportService = {
     async generarReporteMensualCSV(mes: number, anio: number) {
@@ -140,9 +172,9 @@ export const ExportService = {
         </body>
         </html>
         `;
-        const browser = await puppeteer.launch({ headless: true });
+        const browser = await getBrowserInstance();
         const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        await page.setContent(htmlContent, { waitUntil: 'load' });
 
         const pdfBuffer = await page.pdf({
             format: 'A4',

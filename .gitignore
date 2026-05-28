@@ -6,6 +6,7 @@ Thumbs.db
 # --- Backend (Node.js) ---
 backend/node_modules/
 backend/.env
+backend/dist/
 backend/logs/
 backend/*.log
 backend/npm-debug.log*
