@@ -83,6 +83,31 @@ export const Dashboard = () => {
     const totalPersonas = visitasActivas.reduce((acc, v) => acc + parseInt(v.cantidad_personas), 0);
     const totalCruces = visitasActivas.filter(v => v.tiene_cruce_tunel).length;
 
+    // Genera e imprime el PDF del día
+    const [imprimiendoDia, setImprimiendoDia] = useState(false);
+
+    const imprimirDia = async () => {
+        setImprimiendoDia(true);
+        try {
+            const res = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/estadisticas/exportar/diario?fecha=${fechaSeleccionada}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            if (!res.ok) throw new Error('Error al generar el PDF');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Cronograma_${fechaSeleccionada}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error al imprimir cronograma:', err);
+        } finally {
+            setImprimiendoDia(false);
+        }
+    };
+
     const SLOTS: string[] = [];
     for (let h = 8; h <= 17; h++) {
         const hh = h < 10 ? `0${h}` : `${h}`;
@@ -100,6 +125,18 @@ export const Dashboard = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {/* Botón impresora: siempre visible */}
+                    <button
+                        onClick={imprimirDia}
+                        disabled={imprimiendoDia}
+                        title="Imprimir cronograma del día"
+                        className="flex items-center justify-center w-10 h-10 rounded-lg border border-outline-variant bg-white hover:bg-surface-container hover:border-primary/40 text-on-surface-variant hover:text-primary transition-all shadow-sm disabled:opacity-50"
+                    >
+                        <span className={`material-symbols-outlined text-[20px] ${imprimiendoDia ? 'animate-spin' : ''}`}>
+                            {imprimiendoDia ? 'progress_activity' : 'print'}
+                        </span>
+                    </button>
+
                     {!diaInhabil.esInhabil && (
                         <button
                             onClick={() => navigate(`/nueva-visita?fecha=${fechaSeleccionada}`)}
