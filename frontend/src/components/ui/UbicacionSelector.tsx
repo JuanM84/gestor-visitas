@@ -51,8 +51,12 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
     const [sugerencias, setSugerencias] = useState<{ nombre: string; provincia: string }[]>([]);
     const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
     const [buscandoLocalidad, setBuscandoLocalidad] = useState(false);
+
+    // Para posicionar el dropdown con fixed (escapa overflow:hidden de los modales)
+    const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const wrapperRef = useRef<HTMLDivElement>(null);
+    const inputLocalidadRef = useRef<HTMLInputElement>(null);
 
     const esArgentina = !value.pais || value.pais.toLowerCase() === 'argentina';
 
@@ -64,12 +68,26 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
     // Cerrar dropdown al clickear fuera
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+            if (
+                inputLocalidadRef.current &&
+                !inputLocalidadRef.current.contains(e.target as Node)
+            ) {
                 setMostrarSugerencias(false);
             }
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    // Recalcular posición del dropdown cuando se muestra
+    const recalcularPosicion = useCallback(() => {
+        if (!inputLocalidadRef.current) return;
+        const rect = inputLocalidadRef.current.getBoundingClientRect();
+        setDropdownStyle({
+            top: rect.bottom + window.scrollY + 4,
+            left: rect.left + window.scrollX,
+            width: rect.width,
+        });
     }, []);
 
     // Búsqueda de localidades con debounce 300ms
@@ -102,14 +120,19 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                     return true;
                 });
                 setSugerencias(uniqueItems);
-                setMostrarSugerencias(uniqueItems.length > 0);
+                if (uniqueItems.length > 0) {
+                    recalcularPosicion();
+                    setMostrarSugerencias(true);
+                } else {
+                    setMostrarSugerencias(false);
+                }
             } catch (_err) {
                 setSugerencias([]);
             } finally {
                 setBuscandoLocalidad(false);
             }
         }, 300);
-    }, [esArgentina]);
+    }, [esArgentina, recalcularPosicion]);
 
     const handleLocalidadChange = (texto: string) => {
         onChange({ ...value, localidad: texto });
@@ -145,10 +168,10 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
 
     return (
         <div className="flex flex-col gap-3">
-            {/* País */}
+            {/* País — siempre requerido */}
             <div>
                 <label className="font-label-sm block mb-1">
-                    País <span className="text-on-surface-variant font-normal">(Opcional)</span>
+                    País {required && <span className="text-error">*</span>}
                 </label>
                 <input
                     type="text"
@@ -157,6 +180,7 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                     className={inp}
                     placeholder="Argentina"
                     list="paises-comunes"
+                    required={required}
                 />
                 <datalist id="paises-comunes">
                     <option value="Argentina" />
@@ -205,17 +229,23 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                 )}
             </div>
 
-            {/* Localidad con autocomplete */}
-            <div ref={wrapperRef} className="relative">
+            {/* Localidad con autocomplete — dropdown con position:fixed para escapar overflow:hidden */}
+            <div className="relative">
                 <label className="font-label-sm block mb-1">
                     Localidad {required && <span className="text-error">*</span>}
                 </label>
                 <div className="relative">
                     <input
+                        ref={inputLocalidadRef}
                         type="text"
                         value={value.localidad}
                         onChange={e => handleLocalidadChange(e.target.value)}
-                        onFocus={() => { if (sugerencias.length > 0) setMostrarSugerencias(true); }}
+                        onFocus={() => {
+                            if (sugerencias.length > 0) {
+                                recalcularPosicion();
+                                setMostrarSugerencias(true);
+                            }
+                        }}
                         required={required}
                         className={cn(inp, 'pr-10')}
                         placeholder={esArgentina ? 'Ej: Paraná (escribe para buscar)' : 'Ciudad / Localidad'}
@@ -228,9 +258,18 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                     )}
                 </div>
 
-                {/* Dropdown de sugerencias */}
+                {/* Dropdown posicionado con fixed para escapar overflow:hidden de los modales */}
                 {mostrarSugerencias && sugerencias.length > 0 && (
-                    <ul className="absolute z-50 w-full mt-1 bg-white border border-outline-variant rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto">
+                    <ul
+                        style={{
+                            position: 'fixed',
+                            top: dropdownStyle.top,
+                            left: dropdownStyle.left,
+                            width: dropdownStyle.width,
+                            zIndex: 9999,
+                        }}
+                        className="bg-white border border-outline-variant rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto"
+                    >
                         {sugerencias.map((sug, i) => (
                             <li
                                 key={i}

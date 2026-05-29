@@ -95,10 +95,17 @@ export const RegistroVisita = () => {
 
     // Carga inicial de catálogos
     useEffect(() => {
+        if (!token) return; // Esperar a que el token esté disponible
         const headers = { 'Authorization': `Bearer ${token}` };
-        fetch(`${import.meta.env.VITE_API_URL}/api/gestores`, { headers }).then(r => r.json()).then(setGestores).catch(() => {});
-        fetch(`${import.meta.env.VITE_API_URL}/api/instituciones`, { headers }).then(r => r.json()).then(setInstituciones).catch(() => {});
-    }, []);
+        fetch(`${import.meta.env.VITE_API_URL}/api/gestores`, { headers })
+            .then(r => r.json())
+            .then(data => { if (Array.isArray(data)) setGestores(data); })
+            .catch(() => {});
+        fetch(`${import.meta.env.VITE_API_URL}/api/instituciones`, { headers })
+            .then(r => r.json())
+            .then(data => { if (Array.isArray(data)) setInstituciones(data); })
+            .catch(() => {});
+    }, [token]); // Re-ejecutar cuando el token esté listo
 
     // ── Guardar nuevo gestor desde modal ──
     const handleGuardarGestor = async () => {
