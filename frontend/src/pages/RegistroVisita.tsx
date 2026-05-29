@@ -396,7 +396,6 @@ export const RegistroVisita = () => {
                             }
                             inputClassName="h-10 text-sm"
                         />
-                        </div>
                         <div className="flex justify-end gap-3 pt-2">
                             <Button variant="outline" type="button" onClick={() => setModalGestor(false)}>Cancelar</Button>
                             <Button variant="primary" type="button" onClick={handleGuardarGestor} disabled={!nuevoGestor.nombre}>Guardar Gestor</Button>

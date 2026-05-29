@@ -20,7 +20,7 @@ async function cargarProvincias() {
         provinciasCacheadas = (data.provincias as any[])
             .map(p => ({ id: p.id, nombre: p.nombre }))
             .sort((a, b) => a.nombre.localeCompare(b.nombre));
-    } catch {
+    } catch (_err) {
         provinciasCacheadas = [];
     }
     cargandoProvincias = false;
@@ -103,7 +103,7 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                 });
                 setSugerencias(uniqueItems);
                 setMostrarSugerencias(uniqueItems.length > 0);
-            } catch {
+            } catch (_err) {
                 setSugerencias([]);
             } finally {
                 setBuscandoLocalidad(false);
