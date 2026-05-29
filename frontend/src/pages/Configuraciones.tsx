@@ -8,6 +8,11 @@ export const Configuraciones = () => {
     const [guardandoAforo, setGuardandoAforo] = useState(false);
     const [mensajeAforo, setMensajeAforo] = useState({ tipo: '', texto: '' });
 
+    // --- Estados para Timeout de Sesión ---
+    const [sessionTimeout, setSessionTimeout] = useState('30');
+    const [guardandoTimeout, setGuardandoTimeout] = useState(false);
+    const [mensajeTimeout, setMensajeTimeout] = useState({ tipo: '', texto: '' });
+
     // --- Estados para Días Inhábiles ---
     const [dias, setDias] = useState<any[]>([]);
     const [fecha, setFecha] = useState('');
@@ -22,6 +27,7 @@ export const Configuraciones = () => {
     useEffect(() => {
         fetchAforo();
         fetchDias();
+        fetchSessionTimeout();
     }, []);
 
     // --- Lógica Parámetros Generales ---
@@ -62,6 +68,49 @@ export const Configuraciones = () => {
             setGuardandoAforo(false);
             // Limpiamos el mensaje de éxito después de 3 segundos
             setTimeout(() => setMensajeAforo({ tipo: '', texto: '' }), 3000);
+        }
+    };
+
+    // --- Lógica Timeout de Sesión ---
+    const fetchSessionTimeout = async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/configuracion/session_timeout_minutes`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.valor) setSessionTimeout(data.valor);
+            }
+        } catch (err) {
+            console.error('Error al cargar timeout de sesión', err);
+        }
+    };
+
+    const handleGuardarTimeout = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const minutos = parseInt(sessionTimeout, 10);
+        if (isNaN(minutos) || minutos < 1 || minutos > 480) {
+            setMensajeTimeout({ tipo: 'error', texto: 'El valor debe estar entre 1 y 480 minutos.' });
+            return;
+        }
+        setGuardandoTimeout(true);
+        setMensajeTimeout({ tipo: '', texto: '' });
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/configuracion/session_timeout_minutes`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ valor: sessionTimeout })
+            });
+            if (!res.ok) throw new Error('Error al actualizar');
+            setMensajeTimeout({ tipo: 'exito', texto: 'Timeout de sesión actualizado. Se aplicará en el próximo inicio de sesión.' });
+        } catch {
+            setMensajeTimeout({ tipo: 'error', texto: 'No se pudo guardar la configuración.' });
+        } finally {
+            setGuardandoTimeout(false);
+            setTimeout(() => setMensajeTimeout({ tipo: '', texto: '' }), 4000);
         }
     };
 
@@ -163,6 +212,48 @@ export const Configuraciones = () => {
 
                             <Button variant="primary" type="submit" disabled={guardandoAforo} className="w-full mt-2">
                                 {guardandoAforo ? 'Guardando...' : 'Actualizar Aforo'}
+                            </Button>
+                        </form>
+                    </div>
+
+                    {/* CARD: Seguridad de Sesión */}
+                    <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant">
+                        <div className="flex items-center gap-2 mb-4 text-primary">
+                            <span className="material-symbols-outlined">timer</span>
+                            <h2 className="font-h3 text-h3">Seguridad de Sesión</h2>
+                        </div>
+
+                        <form onSubmit={handleGuardarTimeout} className="flex flex-col gap-4">
+                            <div>
+                                <label className="font-label-sm block mb-1">Cierre automático por inactividad</label>
+                                <p className="text-xs text-on-surface-variant mb-2">
+                                    El sistema cerrará la sesión si el usuario no realiza ninguna acción durante este tiempo. Se mostrará una advertencia 1 minuto antes.
+                                </p>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="480"
+                                        required
+                                        value={sessionTimeout}
+                                        onChange={(e) => setSessionTimeout(e.target.value)}
+                                        className={inputStyles}
+                                    />
+                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant">minutos</span>
+                                </div>
+                                <p className="text-xs text-on-surface-variant mt-2">
+                                    Rango permitido: 1 – 480 min &nbsp;·&nbsp; Por defecto: 30 min
+                                </p>
+                            </div>
+
+                            {mensajeTimeout.texto && (
+                                <div className={`p-3 rounded-lg text-sm font-medium ${mensajeTimeout.tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`}>
+                                    {mensajeTimeout.texto}
+                                </div>
+                            )}
+
+                            <Button variant="primary" type="submit" disabled={guardandoTimeout} className="w-full mt-2">
+                                {guardandoTimeout ? 'Guardando...' : 'Actualizar Timeout'}
                             </Button>
                         </form>
                     </div>

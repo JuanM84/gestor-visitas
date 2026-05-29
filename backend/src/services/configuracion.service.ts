@@ -5,6 +5,7 @@ export const ConfiguracionService = {
         const result = await pool.query('SELECT valor FROM Configuracion WHERE clave = $1', [clave]);
         if (result.rows.length === 0) {
             if (clave === 'capacidad_maxima') return '50';
+            if (clave === 'session_timeout_minutes') return '30';
             return null;
         }
         return result.rows[0].valor;
