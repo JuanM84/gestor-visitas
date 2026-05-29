@@ -83,9 +83,10 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
     const recalcularPosicion = useCallback(() => {
         if (!inputLocalidadRef.current) return;
         const rect = inputLocalidadRef.current.getBoundingClientRect();
+        // position:fixed es relativo al viewport — NO sumar scroll
         setDropdownStyle({
-            top: rect.bottom + window.scrollY + 4,
-            left: rect.left + window.scrollX,
+            top: rect.bottom + 4,
+            left: rect.left,
             width: rect.width,
         });
     }, []);

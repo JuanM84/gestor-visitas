@@ -494,7 +494,7 @@ export const RegistroVisita = () => {
                                                 <button
                                                     key={g.id}
                                                     type="button"
-                                                    onClick={() => manejarSeleccionarGestor(g.id)}
+                                                    onMouseDown={e => { e.preventDefault(); manejarSeleccionarGestor(g.id); }}
                                                     className="w-full text-left px-4 py-2 hover:bg-primary/10 border-b border-outline-variant/50 last:border-b-0 transition-colors"
                                                 >
                                                     <p className="font-medium text-on-surface">{g.nombre}</p>
@@ -587,7 +587,7 @@ export const RegistroVisita = () => {
                                                         <button
                                                             key={i.id}
                                                             type="button"
-                                                            onClick={() => manejarSeleccionarInstitucion(i.id)}
+                                                            onMouseDown={e => { e.preventDefault(); manejarSeleccionarInstitucion(i.id); }}
                                                             className="w-full text-left px-4 py-2 hover:bg-primary/10 border-b border-outline-variant/50 last:border-b-0 transition-colors"
                                                         >
                                                             <p className="font-medium text-on-surface">{i.nombre}</p>
