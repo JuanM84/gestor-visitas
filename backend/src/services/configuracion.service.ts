@@ -12,6 +12,21 @@ export const ConfiguracionService = {
     },
 
     async actualizarValor(clave: string, valor: string) {
+        // C-1: Validar rango de aforo máximo
+        if (clave === 'capacidad_maxima') {
+            const num = parseInt(valor, 10);
+            if (isNaN(num) || num < 1 || num > 9999) {
+                throw new Error('El aforo debe ser un número entre 1 y 9999');
+            }
+        }
+        // C-2: Validar rango de timeout de sesión
+        if (clave === 'session_timeout_minutes') {
+            const num = parseInt(valor, 10);
+            if (isNaN(num) || num < 1 || num > 480) {
+                throw new Error('El timeout de sesión debe estar entre 1 y 480 minutos');
+            }
+        }
+
         const existe = await pool.query('SELECT clave FROM Configuracion WHERE clave = $1', [clave]);
 
         if (existe.rows.length > 0) {

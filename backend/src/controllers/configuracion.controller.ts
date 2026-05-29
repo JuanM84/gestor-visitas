@@ -22,8 +22,8 @@ export const ConfiguracionController = {
 
             const actualizado = await ConfiguracionService.actualizarValor(clave as string, valor.toString());
             res.status(200).json({ mensaje: 'Configuración guardada', data: actualizado });
-        } catch (error) {
-            res.status(500).json({ error: 'Error al guardar configuración' });
+        } catch (error: any) {
+            res.status(400).json({ error: error?.message || 'Error al guardar configuración' });
         }
     }
 };

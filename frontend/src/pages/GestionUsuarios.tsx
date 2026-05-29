@@ -14,6 +14,7 @@ export const GestionUsuarios = () => {
         password: '',
         rol: 'Guía'
     });
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [creando, setCreando] = useState(false);
     const [mensajeForm, setMensajeForm] = useState({ tipo: '', texto: '' });
 
@@ -45,6 +46,13 @@ export const GestionUsuarios = () => {
         setCreando(true);
         setMensajeForm({ tipo: '', texto: '' });
 
+        // U-7: Validar que las contraseñas coincidan
+        if (formData.password !== confirmPassword) {
+            setMensajeForm({ tipo: 'error', texto: 'Las contraseñas no coinciden.' });
+            setCreando(false);
+            return;
+        }
+
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios`, {
                 method: 'POST',
@@ -60,8 +68,9 @@ export const GestionUsuarios = () => {
             if (!res.ok) throw new Error(data.error || 'Error al crear usuario');
 
             setMensajeForm({ tipo: 'exito', texto: 'Usuario creado correctamente.' });
-            setFormData({ nombre: '', email: '', password: '', rol: 'Guía' }); // Limpiamos el form
-            fetchUsuarios(); // Recargamos la tabla
+            setFormData({ nombre: '', email: '', password: '', rol: 'Guía' });
+            setConfirmPassword(''); // Limpiar campo de confirmación
+            fetchUsuarios();
 
         } catch (err: any) {
             setMensajeForm({ tipo: 'error', texto: err.message });
@@ -100,7 +109,29 @@ export const GestionUsuarios = () => {
 
                         <div>
                             <label className="font-label-sm block mb-1">Contraseña Provisoria</label>
-                            <input type="password" required value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className={inputStyles} placeholder="Mínimo 6 caracteres" minLength={6} />
+                            <input
+                                type="password"
+                                required
+                                minLength={8}
+                                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
+                                title="Mínimo 8 caracteres, una mayúscula, una minúscula y un número"
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                className={inputStyles}
+                                placeholder="Mínimo 8 caracteres"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="font-label-sm block mb-1">Repetir Contraseña</label>
+                            <input
+                                type="password"
+                                required
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className={inputStyles}
+                                placeholder="Repita la contraseña"
+                            />
                         </div>
 
                         <div>
@@ -112,7 +143,10 @@ export const GestionUsuarios = () => {
                         </div>
 
                         {mensajeForm.texto && (
-                            <div className={`p-3 rounded-lg text-sm font-medium ${mensajeForm.tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`}>
+                            <div className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium ${mensajeForm.tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`}>
+                                <span className="material-symbols-outlined text-[16px] shrink-0">
+                                    {mensajeForm.tipo === 'exito' ? 'check_circle' : 'error'}
+                                </span>
                                 {mensajeForm.texto}
                             </div>
                         )}

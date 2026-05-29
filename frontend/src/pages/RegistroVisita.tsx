@@ -762,8 +762,14 @@ export const RegistroVisita = () => {
 
                         {visita.tiene_discapacidad && (
                             <div className="md:col-span-4">
-                                <label className="text-xs font-bold uppercase text-outline">Detalle de accesibilidad</label>
-                                <input className={inp} placeholder="Ej: 2 personas en silla de ruedas" value={visita.discapacidad_detalle} onChange={e => setVisita({ ...visita, discapacidad_detalle: e.target.value })} />
+                                <label className="text-xs font-bold uppercase text-outline">Detalle de accesibilidad *</label>
+                                <input
+                                    required
+                                    className={inp}
+                                    placeholder="Ej: 2 personas en silla de ruedas"
+                                    value={visita.discapacidad_detalle}
+                                    onChange={e => setVisita({ ...visita, discapacidad_detalle: e.target.value })}
+                                />
                             </div>
                         )}
                     </div>

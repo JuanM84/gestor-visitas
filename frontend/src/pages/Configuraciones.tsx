@@ -60,14 +60,14 @@ export const Configuraciones = () => {
                 body: JSON.stringify({ valor: aforoMaximo })
             });
 
-            if (!res.ok) throw new Error('Error al actualizar');
-            setMensajeAforo({ tipo: 'exito', texto: 'Aforo actualizado correctamente.' });
-        } catch (err) {
-            setMensajeAforo({ tipo: 'error', texto: 'No se pudo guardar la configuración.' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al actualizar el aforo');
+            setMensajeAforo({ tipo: 'exito', texto: '✓ Aforo actualizado correctamente.' });
+        } catch (err: any) {
+            setMensajeAforo({ tipo: 'error', texto: err.message || 'No se pudo guardar la configuración.' });
         } finally {
             setGuardandoAforo(false);
-            // Limpiamos el mensaje de éxito después de 3 segundos
-            setTimeout(() => setMensajeAforo({ tipo: '', texto: '' }), 3000);
+            setTimeout(() => setMensajeAforo({ tipo: '', texto: '' }), 4000);
         }
     };
 
@@ -104,10 +104,11 @@ export const Configuraciones = () => {
                 },
                 body: JSON.stringify({ valor: sessionTimeout })
             });
-            if (!res.ok) throw new Error('Error al actualizar');
-            setMensajeTimeout({ tipo: 'exito', texto: 'Timeout de sesión actualizado. Se aplicará en el próximo inicio de sesión.' });
-        } catch {
-            setMensajeTimeout({ tipo: 'error', texto: 'No se pudo guardar la configuración.' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al actualizar el timeout');
+            setMensajeTimeout({ tipo: 'exito', texto: '✓ Timeout de sesión actualizado. Se aplicará en el próximo inicio de sesión.' });
+        } catch (err: any) {
+            setMensajeTimeout({ tipo: 'error', texto: err.message || 'No se pudo guardar la configuración.' });
         } finally {
             setGuardandoTimeout(false);
             setTimeout(() => setMensajeTimeout({ tipo: '', texto: '' }), 4000);
@@ -144,7 +145,8 @@ export const Configuraciones = () => {
                 body: JSON.stringify({ fecha, descripcion })
             });
 
-            if (!res.ok) throw new Error('Error al guardar el día');
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al guardar el día inhábil');
 
             setFecha('');
             setDescripcion('');
@@ -282,7 +284,12 @@ export const Configuraciones = () => {
                             <span className="material-symbols-outlined text-[18px]">add</span>
                             Agregar Día
                         </Button>
-                        {errorDias && <p className="text-error text-sm w-full mt-1">{errorDias}</p>}
+                        {errorDias && (
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-error-container text-on-error-container text-sm font-medium w-full mt-1">
+                                <span className="material-symbols-outlined text-[16px] shrink-0">error</span>
+                                {errorDias}
+                            </div>
+                        )}
                     </form>
 
                     {/* Tabla de Días Inhábiles */}

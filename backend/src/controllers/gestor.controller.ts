@@ -36,7 +36,7 @@ export const GestorController = {
             const nuevoGestor = await GestorService.crearGestor(req.body);
             res.status(201).json({ mensaje: 'Gestor creado exitosamente', gestor: nuevoGestor });
         } catch (error: any) {
-            res.status(500).json({ error: 'Error al guardar el gestor' });
+            res.status(400).json({ error: error?.message || 'Error al guardar el gestor' });
         }
     }
 };

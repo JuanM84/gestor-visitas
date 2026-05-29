@@ -12,6 +12,11 @@ export const GestorService = {
     },
 
     async crearGestor(datos: any) {
+        // G-1: Validar nombre obligatorio
+        if (!datos.nombre?.trim()) {
+            throw new Error('El nombre del gestor es obligatorio');
+        }
+
         const query = `
             INSERT INTO Gestor (nombre, tipo, empresa_institucion, telefono, email, localidad, provincia, pais) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 

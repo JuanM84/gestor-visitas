@@ -19,8 +19,10 @@ export const DiaInhabilController = {
             }
             const nuevoDia = await DiaInhabilService.agregar(fecha, descripcion);
             res.status(201).json(nuevoDia);
-        } catch (error) {
-            res.status(500).json({ error: 'Error al registrar el día inhábil' });
+        } catch (error: any) {
+            const msg = error?.message || '';
+            const status = msg.includes('ya está registrada') ? 409 : 400;
+            res.status(status).json({ error: msg || 'Error al registrar el día inhábil' });
         }
     },
 

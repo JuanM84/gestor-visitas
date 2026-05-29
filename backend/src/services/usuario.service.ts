@@ -13,6 +13,21 @@ export const UsuarioService = {
     },
 
     async crearUsuario(datos: any) {
+        // U-5: Validar rol
+        const ROLES_VALIDOS = ['Guía', 'Admin'];
+        if (datos.rol && !ROLES_VALIDOS.includes(datos.rol)) {
+            throw new Error(`Rol inválido. Los valores permitidos son: ${ROLES_VALIDOS.join(', ')}`);
+        }
+
+        // U-4 / U-6: Validar política de contraseña
+        if (!datos.password || datos.password.length < 8) {
+            throw new Error('La contraseña debe tener al menos 8 caracteres');
+        }
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!passwordRegex.test(datos.password)) {
+            throw new Error('La contraseña debe tener al menos una mayúscula, una minúscula y un número');
+        }
+
         const existe = await pool.query('SELECT id FROM Usuario WHERE email = $1', [datos.email]);
         if (existe.rows.length > 0) {
             throw new Error('El correo electrónico ya está registrado.');

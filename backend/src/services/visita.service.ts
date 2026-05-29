@@ -108,7 +108,12 @@ export const VisitaService = {
             throw new Error('El tipo de visitante debe ser "Institución" o "Particulares"');
         }
 
-        // 4. Validaciones específicas por tipo
+        // 4. Validar detalle de accesibilidad (V-19)
+        if (datos.visita.tiene_discapacidad && !datos.visita.discapacidad_detalle?.trim()) {
+            throw new Error('Debe especificar el detalle de accesibilidad cuando se indica que el grupo requiere accesibilidad');
+        }
+
+        // 5. Validaciones específicas por tipo
         if (tipoVisitante === 'Institución') {
             const g = datos.grupo as GrupoInstitucionDto;
             if (!g.nivel_educativo || !NIVELES_EDUCATIVOS.includes(g.nivel_educativo)) {
@@ -127,6 +132,10 @@ export const VisitaService = {
             if (!g.nombre) throw new Error('El nombre del grupo es obligatorio para particulares');
             if (!g.telefono) throw new Error('El teléfono de contacto es obligatorio');
             if (!g.email) throw new Error('El email de contacto es obligatorio');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(g.email)) {
+                throw new Error('El email de contacto no tiene un formato válido');
+            }
             if (!g.localidad) throw new Error('La localidad es obligatoria');
             if (!g.provincia) throw new Error('La provincia es obligatoria');
         }

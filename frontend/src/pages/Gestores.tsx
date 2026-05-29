@@ -180,7 +180,10 @@ export const Gestores = () => {
                         />
 
                         {mensajeForm.texto && (
-                            <div className={`p-3 rounded-lg text-sm font-medium ${mensajeForm.tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`}>
+                            <div className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium ${mensajeForm.tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`}>
+                                <span className="material-symbols-outlined text-[16px] shrink-0">
+                                    {mensajeForm.tipo === 'exito' ? 'check_circle' : 'error'}
+                                </span>
                                 {mensajeForm.texto}
                             </div>
                         )}
