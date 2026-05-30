@@ -30,29 +30,72 @@ const StatsBlocks = ({ stats, etiquetaPeriodo }: { stats: any; etiquetaPeriodo: 
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Gráfico Evolución */}
-                <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
-                    <h3 className="font-h3 mb-1">Evolución de Ocupación</h3>
-                    <p className="text-xs text-outline mb-6">{etiquetaPeriodo}</p>
+                <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-outline-variant shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 className="font-h3 mb-1">Evolución de Ocupación</h3>
+                        <p className="text-xs text-outline mb-6">{etiquetaPeriodo}</p>
+                    </div>
                     {stats.evolucion.length === 0 ? (
                         <div className="text-center text-outline py-10">No hay datos registrados en este período.</div>
                     ) : (
-                        <div className="h-48 flex items-end gap-2 overflow-x-auto pb-2">
-                            {stats.evolucion.map((dia: any, index: number) => {
-                                const heightPercent = (parseInt(dia.personas) / maxPersonas) * 100;
-                                return (
-                                    <div key={index} className="flex flex-col items-center flex-1 min-w-[30px] group">
-                                        <div
-                                            className="w-full bg-primary/20 hover:bg-primary rounded-t-sm transition-all relative"
-                                            style={{ height: `${heightPercent}%`, minHeight: '4px' }}
-                                        >
-                                            <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container-highest text-on-surface text-xs font-bold py-1 px-2 rounded pointer-events-none transition-opacity">
-                                                {dia.personas}
+                        <div>
+                            <div className="h-48 flex items-end gap-2 overflow-x-auto pb-2">
+                                {stats.evolucion.map((dia: any, index: number) => {
+                                    const personas = parseInt(dia.personas);
+                                    
+                                    // Para que el gráfico sea altamente demostrativo y las alturas fluctúen 
+                                    // de forma visible entre sí (como de 14 a 30), escalamos linealmente 
+                                    // contra el pico máximo del mes actual (maxPersonas).
+                                    const heightPercent = maxPersonas > 0 ? (personas / maxPersonas) * 100 : 0;
+                                    
+                                    // La capacidad máxima permitida por día sigue siendo 1600
+                                    const limiteReferencia = 1600;
+                                    const porcentajeAforo = (personas / limiteReferencia) * 100;
+                                    
+                                    // Colores dinámicos basados en la capacidad máxima de 1600 personas
+                                    let colorBarra = 'bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-500/30 hover:border-emerald-500'; // Verde (< 500 personas)
+                                    if (personas >= 1200) {
+                                        colorBarra = 'bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 hover:border-rose-500'; // Rojo (≥ 1200 personas)
+                                    } else if (personas >= 500) {
+                                        colorBarra = 'bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 hover:border-amber-500'; // Amarillo (500 - 1200 personas)
+                                    }
+
+                                    return (
+                                        <div key={index} className="flex flex-col items-center flex-1 min-w-[30px] group h-full justify-end">
+                                            <div
+                                                className={`w-full ${colorBarra} rounded-t-md transition-all relative`}
+                                                style={{ height: `${heightPercent}%`, minHeight: '12px' }}
+                                            >
+                                                {/* Tooltip premium */}
+                                                <div className="opacity-0 group-hover:opacity-100 absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-container-highest text-on-surface text-[10px] font-bold py-1.5 px-2.5 rounded-lg border border-outline-variant shadow-md pointer-events-none transition-opacity z-10 whitespace-nowrap">
+                                                    <span className="block text-[8px] text-outline font-normal">Ocupación</span>
+                                                    {personas} personas ({porcentajeAforo.toFixed(1)}% del aforo)
+                                                </div>
                                             </div>
+                                            <span className="text-[10px] text-outline mt-2 font-bold">{dia.dia}</span>
                                         </div>
-                                        <span className="text-[10px] text-outline mt-2 font-bold">{dia.dia}</span>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Leyenda de colores */}
+                            <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-outline-variant text-[11px] font-bold justify-between items-center text-on-surface-variant">
+                                <span className="text-[10px] text-outline font-medium">Aforo Diario Máximo: 1600 personas</span>
+                                <div className="flex flex-wrap gap-4">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500"></span>
+                                        Baja Ocupación (&lt; 500 pers.)
                                     </div>
-                                );
-                            })}
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500"></span>
+                                        Media Ocupación (500 - 1200 pers.)
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500/20 border border-rose-500"></span>
+                                        Alta Ocupación (&ge; 1200 pers. / Máx 1600)
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
