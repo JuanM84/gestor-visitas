@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '../../utils/cn';
+import { paises } from '../../data/paises.js';
 
 // ── Caché de módulo: las provincias se cargan UNA sola vez para toda la sesión ──
 let provinciasCacheadas: { id: string; nombre: string }[] | null = null;
@@ -52,6 +53,13 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
     const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
     const [buscandoLocalidad, setBuscandoLocalidad] = useState(false);
 
+    // Autocomplete de país
+    const [busquedaPais, setBusquedaPais] = useState(value.pais || 'Argentina');
+    const [sugerenciasPais, setSugerenciasPais] = useState<{ id: string; nombre: string }[]>([]);
+    const [mostrarDropdownPais, setMostrarDropdownPais] = useState(false);
+    const [dropdownPaisStyle, setDropdownPaisStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+    const inputPaisRef = useRef<HTMLInputElement>(null);
+
     // Para posicionar el dropdown con fixed (escapa overflow:hidden de los modales)
     const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
 
@@ -59,6 +67,11 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
     const inputLocalidadRef = useRef<HTMLInputElement>(null);
 
     const esArgentina = !value.pais || value.pais.toLowerCase() === 'argentina';
+
+    // Sincronizar el texto del input cuando el valor controlado cambia externamente (ej: reset del form)
+    useEffect(() => {
+        setBusquedaPais(value.pais || 'Argentina');
+    }, [value.pais]);
 
     // Cargar provincias al montar
     useEffect(() => {
@@ -151,14 +164,52 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
         setSugerencias([]);
     };
 
-    const handlePaisChange = (pais: string) => {
-        const nuevo = { ...value, pais };
-        // Si cambia a no-Argentina, limpiamos localidad y provincia para texto libre
-        if (pais.toLowerCase() !== 'argentina' && pais !== '') {
+    const handlePaisChange = (paisNombre: string) => {
+        setBusquedaPais(paisNombre);
+        // Filtrar lista
+        if (paisNombre.trim().length >= 1) {
+            const filtrados = paises
+                .filter(p => p.nombre.toLowerCase().includes(paisNombre.toLowerCase()))
+                .slice(0, 8);
+            setSugerenciasPais(filtrados);
+            // Recalcular posición dropdown
+            if (inputPaisRef.current) {
+                const rect = inputPaisRef.current.getBoundingClientRect();
+                setDropdownPaisStyle({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+            }
+            setMostrarDropdownPais(filtrados.length > 0);
+        } else {
+            setSugerenciasPais([]);
+            setMostrarDropdownPais(false);
+        }
+        // Si el texto no coincide con ningún país conocido, guardamos el valor tal cual
+        const nuevo = { ...value, pais: paisNombre };
+        if (paisNombre.toLowerCase() !== 'argentina' && paisNombre !== '') {
             nuevo.localidad = '';
             nuevo.provincia = '';
         }
         onChange(nuevo);
+    };
+
+    const handleSeleccionarPais = (pais: { id: string; nombre: string }) => {
+        setBusquedaPais(pais.nombre);
+        setSugerenciasPais([]);
+        setMostrarDropdownPais(false);
+        const nuevo = { ...value, pais: pais.nombre };
+        if (pais.nombre.toLowerCase() !== 'argentina') {
+            nuevo.localidad = '';
+            nuevo.provincia = '';
+        }
+        onChange(nuevo);
+    };
+
+    const handlePaisBlur = () => {
+        setTimeout(() => setMostrarDropdownPais(false), 150);
+        // Si el campo quedó vacío, restaurar Argentina
+        if (!busquedaPais.trim()) {
+            setBusquedaPais('Argentina');
+            onChange({ ...value, pais: 'Argentina' });
+        }
     };
 
     const inp = cn(
@@ -169,36 +220,63 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
 
     return (
         <div className="flex flex-col gap-3">
-            {/* País — siempre requerido */}
-            <div>
+            {/* País — autocomplete con dropdown */}
+            <div className="relative">
                 <label className="font-label-sm block mb-1">
                     País {required && <span className="text-error">*</span>}
                 </label>
-                <input
-                    type="text"
-                    value={value.pais}
-                    onChange={e => handlePaisChange(e.target.value)}
-                    className={inp}
-                    placeholder="Argentina"
-                    list="paises-comunes"
-                    required={required}
-                />
-                <datalist id="paises-comunes">
-                    <option value="Argentina" />
-                    <option value="Brasil" />
-                    <option value="Uruguay" />
-                    <option value="Paraguay" />
-                    <option value="Chile" />
-                    <option value="Bolivia" />
-                    <option value="Colombia" />
-                    <option value="Venezuela" />
-                    <option value="España" />
-                    <option value="Italia" />
-                    <option value="Francia" />
-                    <option value="Alemania" />
-                    <option value="Estados Unidos" />
-                    <option value="México" />
-                </datalist>
+                <div className="relative">
+                    <input
+                        ref={inputPaisRef}
+                        type="text"
+                        value={busquedaPais}
+                        onChange={e => handlePaisChange(e.target.value)}
+                        onFocus={() => {
+                            if (busquedaPais.trim().length >= 1) {
+                                const filtrados = paises
+                                    .filter(p => p.nombre.toLowerCase().includes(busquedaPais.toLowerCase()))
+                                    .slice(0, 8);
+                                setSugerenciasPais(filtrados);
+                                if (inputPaisRef.current) {
+                                    const rect = inputPaisRef.current.getBoundingClientRect();
+                                    setDropdownPaisStyle({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+                                }
+                                setMostrarDropdownPais(filtrados.length > 0);
+                            }
+                        }}
+                        onBlur={handlePaisBlur}
+                        className={inp}
+                        placeholder="Argentina"
+                        required={required}
+                        autoComplete="off"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[16px] text-outline pointer-events-none">
+                        public
+                    </span>
+                </div>
+
+                {mostrarDropdownPais && sugerenciasPais.length > 0 && (
+                    <ul
+                        style={{
+                            position: 'fixed',
+                            top: dropdownPaisStyle.top,
+                            left: dropdownPaisStyle.left,
+                            width: dropdownPaisStyle.width,
+                            zIndex: 9999,
+                        }}
+                        className="bg-white border border-outline-variant rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto"
+                    >
+                        {sugerenciasPais.map(p => (
+                            <li
+                                key={p.id}
+                                onMouseDown={() => handleSeleccionarPais(p)}
+                                className="px-4 py-2.5 cursor-pointer hover:bg-primary/5 text-sm font-medium text-on-surface"
+                            >
+                                {p.nombre}
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
 
             {/* Provincia */}
