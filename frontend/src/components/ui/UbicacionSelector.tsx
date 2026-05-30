@@ -68,9 +68,10 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
 
     const esArgentina = !value.pais || value.pais.toLowerCase() === 'argentina';
 
-    // Sincronizar el texto del input cuando el valor controlado cambia externamente (ej: reset del form)
+    // Sincronizar el texto del input cuando el valor cambia externamente (ej: reset del form desde el padre).
+    // Sin fallback a 'Argentina' para no resetear el campo mientras el usuario escribe.
     useEffect(() => {
-        setBusquedaPais(value.pais || 'Argentina');
+        setBusquedaPais(value.pais);
     }, [value.pais]);
 
     // Cargar provincias al montar
@@ -165,14 +166,16 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
     };
 
     const handlePaisChange = (paisNombre: string) => {
+        // Solo actualiza el texto visible y el dropdown.
+        // NO llama a onChange mientras el usuario tipea: eso causaba que value.pais
+        // cambiara en cada tecla, disparando el useEffect y reseteando el campo.
         setBusquedaPais(paisNombre);
-        // Filtrar lista
+
         if (paisNombre.trim().length >= 1) {
             const filtrados = paises
                 .filter(p => p.nombre.toLowerCase().includes(paisNombre.toLowerCase()))
                 .slice(0, 8);
             setSugerenciasPais(filtrados);
-            // Recalcular posición dropdown
             if (inputPaisRef.current) {
                 const rect = inputPaisRef.current.getBoundingClientRect();
                 setDropdownPaisStyle({ top: rect.bottom + 4, left: rect.left, width: rect.width });
@@ -182,16 +185,10 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
             setSugerenciasPais([]);
             setMostrarDropdownPais(false);
         }
-        // Si el texto no coincide con ningún país conocido, guardamos el valor tal cual
-        const nuevo = { ...value, pais: paisNombre };
-        if (paisNombre.toLowerCase() !== 'argentina' && paisNombre !== '') {
-            nuevo.localidad = '';
-            nuevo.provincia = '';
-        }
-        onChange(nuevo);
     };
 
     const handleSeleccionarPais = (pais: { id: string; nombre: string }) => {
+        // Al seleccionar del dropdown, se compromete el valor al padre.
         setBusquedaPais(pais.nombre);
         setSugerenciasPais([]);
         setMostrarDropdownPais(false);
@@ -204,9 +201,19 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
     };
 
     const handlePaisBlur = () => {
-        // Solo cerramos el dropdown; NO restauramos Argentina.
-        // El usuario puede borrar el campo para escribir otro país libremente.
         setTimeout(() => setMostrarDropdownPais(false), 150);
+        // Al salir del campo, commitear lo que quede escrito al padre
+        // (permite escribir un país manualmente sin elegir del dropdown).
+        // Si el campo está vacío, no se fuerza Argentina: se deja vacío.
+        const textoFinal = busquedaPais.trim();
+        if (textoFinal !== value.pais) {
+            const nuevo = { ...value, pais: textoFinal };
+            if (textoFinal.toLowerCase() !== 'argentina' && textoFinal !== '') {
+                nuevo.localidad = '';
+                nuevo.provincia = '';
+            }
+            onChange(nuevo);
+        }
     };
 
     const inp = cn(
