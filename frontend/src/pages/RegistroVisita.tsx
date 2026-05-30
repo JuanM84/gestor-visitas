@@ -333,14 +333,30 @@ export const RegistroVisita = () => {
                                 {esInstConfirm ? (
                                     <div className="mt-2 text-xs text-on-surface-variant space-y-0.5">
                                         <p>Nivel educativo: <span className="font-semibold text-on-surface">{payloadPendiente.grupo.nivel_educativo}</span></p>
-                                        {!institucion_id && <span className="inline-block mt-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold rounded-full">Nueva institución</span>}
+                                        {institucion_id && institucionSeleccionada ? (
+                                            <>
+                                                {(institucionSeleccionada.localidad || institucionSeleccionada.provincia) && (
+                                                    <p>Localidad: <span className="font-semibold text-on-surface">{institucionSeleccionada.localidad || 'No especificado'}, {institucionSeleccionada.provincia || 'No especificado'}</span></p>
+                                                )}
+                                                <p>País: <span className="font-semibold text-on-surface">{institucionSeleccionada.pais || 'Argentina'}</span></p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p>Localidad: <span className="font-semibold text-on-surface">{nuevaInstitucion.localidad || 'No especificado'}, {nuevaInstitucion.provincia || 'No especificado'}</span></p>
+                                                <p>País: <span className="font-semibold text-on-surface">{nuevaInstitucion.pais || 'Argentina'}</span></p>
+                                                <span className="inline-block mt-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold rounded-full">Nueva institución</span>
+                                            </>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="mt-2 text-xs text-on-surface-variant space-y-0.5">
                                         <p>Tipo de grupo: <span className="font-semibold text-on-surface">{payloadPendiente.grupo.tipo_grupo}</span></p>
                                         {payloadPendiente.grupo.telefono && <p>Tel: <span className="font-semibold text-on-surface">{payloadPendiente.grupo.telefono}</span></p>}
                                         {payloadPendiente.grupo.email && <p>Email: <span className="font-semibold text-on-surface">{payloadPendiente.grupo.email}</span></p>}
-                                        {payloadPendiente.grupo.localidad && <p>Localidad: <span className="font-semibold text-on-surface">{payloadPendiente.grupo.localidad}, {payloadPendiente.grupo.provincia}</span></p>}
+                                        {(payloadPendiente.grupo.localidad || payloadPendiente.grupo.provincia) && (
+                                            <p>Localidad: <span className="font-semibold text-on-surface">{payloadPendiente.grupo.localidad || 'No especificado'}, {payloadPendiente.grupo.provincia || 'No especificado'}</span></p>
+                                        )}
+                                        <p>País: <span className="font-semibold text-on-surface">{payloadPendiente.grupo.pais || 'Argentina'}</span></p>
                                     </div>
                                 )}
                             </div>

@@ -194,8 +194,8 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
         setMostrarDropdownPais(false);
         const nuevo = { ...value, pais: pais.nombre };
         if (pais.nombre.toLowerCase() !== 'argentina') {
-            nuevo.localidad = '';
-            nuevo.provincia = '';
+            nuevo.localidad = 'No especificado';
+            nuevo.provincia = 'No especificado';
         }
         onChange(nuevo);
     };
@@ -209,8 +209,8 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
         if (textoFinal !== value.pais) {
             const nuevo = { ...value, pais: textoFinal };
             if (textoFinal.toLowerCase() !== 'argentina' && textoFinal !== '') {
-                nuevo.localidad = '';
-                nuevo.provincia = '';
+                nuevo.localidad = 'No especificado';
+                nuevo.provincia = 'No especificado';
             }
             onChange(nuevo);
         }
@@ -307,6 +307,16 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                         type="text"
                         value={value.provincia}
                         onChange={e => onChange({ ...value, provincia: e.target.value })}
+                        onFocus={() => {
+                            if (value.provincia === 'No especificado') {
+                                onChange({ ...value, provincia: '' });
+                            }
+                        }}
+                        onBlur={() => {
+                            if (!value.provincia.trim()) {
+                                onChange({ ...value, provincia: 'No especificado' });
+                            }
+                        }}
                         className={inp}
                         placeholder="No especificado"
                     />
@@ -327,9 +337,17 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                         value={value.localidad}
                         onChange={e => handleLocalidadChange(e.target.value)}
                         onFocus={() => {
+                            if (value.localidad === 'No especificado') {
+                                onChange({ ...value, localidad: '' });
+                            }
                             if (sugerencias.length > 0) {
                                 recalcularPosicion();
                                 setMostrarSugerencias(true);
+                            }
+                        }}
+                        onBlur={() => {
+                            if (!value.localidad.trim()) {
+                                onChange({ ...value, localidad: 'No especificado' });
                             }
                         }}
                         required={required && esArgentina}

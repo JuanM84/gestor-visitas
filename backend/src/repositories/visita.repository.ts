@@ -73,12 +73,14 @@ async getById(id: string) {
             gr.email               AS grupo_email,
             gr.localidad           AS grupo_localidad,
             gr.provincia           AS grupo_provincia,
+            gr.pais                AS grupo_pais,
             inst.id                AS institucion_id,
             inst.nombre            AS institucion_nombre,
             inst.telefono          AS institucion_telefono,
             inst.email             AS institucion_email,
             inst.localidad         AS institucion_localidad,
-            inst.provincia         AS institucion_provincia
+            inst.provincia         AS institucion_provincia,
+            inst.pais              AS institucion_pais
         FROM Visita v
         JOIN Gestor g  ON v.gestor_id  = g.id
         JOIN Grupo  gr ON v.grupo_id   = gr.id

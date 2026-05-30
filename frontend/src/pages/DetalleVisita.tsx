@@ -220,6 +220,7 @@ export const DetalleVisita = () => {
                         <Dato label="Email institucional" value={visita.institucion_email} icon="mail" />
                         <Dato label="Localidad" value={visita.institucion_localidad} icon="location_on" />
                         <Dato label="Provincia" value={visita.institucion_provincia} icon="map" />
+                        <Dato label="País" value={visita.institucion_pais || 'Argentina'} icon="public" />
                     </Seccion>
                 )}
 
@@ -244,6 +245,7 @@ export const DetalleVisita = () => {
                         <Dato label="Email de contacto" value={visita.grupo_email} icon="mail" />
                         <Dato label="Localidad" value={visita.grupo_localidad} icon="location_on" />
                         <Dato label="Provincia" value={visita.grupo_provincia} icon="map" />
+                        <Dato label="País" value={visita.grupo_pais || 'Argentina'} icon="public" />
                     </Seccion>
                 )}
 
