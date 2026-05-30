@@ -204,12 +204,9 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
     };
 
     const handlePaisBlur = () => {
+        // Solo cerramos el dropdown; NO restauramos Argentina.
+        // El usuario puede borrar el campo para escribir otro país libremente.
         setTimeout(() => setMostrarDropdownPais(false), 150);
-        // Si el campo quedó vacío, restaurar Argentina
-        if (!busquedaPais.trim()) {
-            setBusquedaPais('Argentina');
-            onChange({ ...value, pais: 'Argentina' });
-        }
     };
 
     const inp = cn(
@@ -282,7 +279,8 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
             {/* Provincia */}
             <div>
                 <label className="font-label-sm block mb-1">
-                    Provincia {required && esArgentina && <span className="text-error">*</span>}
+                    Provincia
+                    {required && esArgentina && <span className="text-error">*</span>}
                     {!esArgentina && <span className="text-on-surface-variant font-normal"> (Opcional)</span>}
                 </label>
                 {esArgentina ? (
@@ -303,7 +301,7 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                         value={value.provincia}
                         onChange={e => onChange({ ...value, provincia: e.target.value })}
                         className={inp}
-                        placeholder="Estado / Región / Provincia"
+                        placeholder="No especificado"
                     />
                 )}
             </div>
@@ -311,7 +309,9 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
             {/* Localidad con autocomplete — dropdown con position:fixed para escapar overflow:hidden */}
             <div className="relative">
                 <label className="font-label-sm block mb-1">
-                    Localidad {required && <span className="text-error">*</span>}
+                    Localidad
+                    {required && esArgentina && <span className="text-error">*</span>}
+                    {!esArgentina && <span className="text-on-surface-variant font-normal"> (Opcional)</span>}
                 </label>
                 <div className="relative">
                     <input
@@ -325,9 +325,9 @@ export const UbicacionSelector = ({ value, onChange, inputClassName, required = 
                                 setMostrarSugerencias(true);
                             }
                         }}
-                        required={required}
+                        required={required && esArgentina}
                         className={cn(inp, 'pr-10')}
-                        placeholder={esArgentina ? 'Ej: Paraná (escribe para buscar)' : 'Ciudad / Localidad'}
+                        placeholder={esArgentina ? 'Ej: Paraná (escribe para buscar)' : 'No especificado'}
                         autoComplete="off"
                     />
                     {buscandoLocalidad && (
