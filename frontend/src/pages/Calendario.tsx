@@ -15,6 +15,13 @@ export const Calendario = () => {
     const [visitasDelDia, setVisitasDelDia] = useState<any[]>([]);
     const [loadingVisitas, setLoadingVisitas] = useState(false);
 
+    // --- NUEVOS ESTADOS PARA EL MODAL DE IMPRESIÓN ---
+    const [modalImprimirAbierto, setModalImprimirAbierto] = useState(false);
+    const [fechaDesde, setFechaDesde] = useState('');
+    const [fechaHasta, setFechaHasta] = useState('');
+    const [errorImpresion, setErrorImpresion] = useState<string | null>(null);
+    const [generandoPDF, setGenerandoPDF] = useState(false);
+
     const { token } = useAuth();
     const anio = fechaActual.getFullYear();
     const mes = fechaActual.getMonth();
@@ -92,6 +99,55 @@ export const Calendario = () => {
         setVisitasDelDia([]);
     };
 
+    const handleImprimirListado = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorImpresion(null);
+
+        if (!fechaDesde || !fechaHasta) {
+            setErrorImpresion('Debes seleccionar ambas fechas.');
+            return;
+        }
+
+        const desdeDate = new Date(fechaDesde);
+        const hastaDate = new Date(fechaHasta);
+
+        if (desdeDate >= hastaDate) {
+            setErrorImpresion('La fecha "Desde" debe ser menor que la fecha "Hasta".');
+            return;
+        }
+
+        setGenerandoPDF(true);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/estadisticas/exportar/rango?desde=${fechaDesde}&hasta=${fechaHasta}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al generar el PDF.');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte_Visitas_${fechaDesde}_a_${fechaHasta}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            
+            // Cerrar modal
+            setModalImprimirAbierto(false);
+            setFechaDesde('');
+            setFechaHasta('');
+        } catch (error) {
+            console.error('Error generando el listado PDF:', error);
+            setErrorImpresion('Hubo un error al intentar generar el archivo PDF.');
+        } finally {
+            setGenerandoPDF(false);
+        }
+    };
+
     return (
         <div className="flex flex-col max-w-[1440px] w-full mx-auto relative">
             {/* Cabecera */}
@@ -101,8 +157,8 @@ export const Calendario = () => {
                     <p className="font-body-md text-on-surface-variant">Visualización de ocupación mensual y gestión de fechas.</p>
                 </div>
                 <div className="flex gap-sm">
-                    <Button variant="outline">
-                        <span className="material-symbols-outlined text-[18px]">print</span> Imprimir Mes
+                    <Button variant="outline" onClick={() => setModalImprimirAbierto(true)}>
+                        <span className="material-symbols-outlined text-[18px]">print</span> Imprimir Listado
                     </Button>
                     <Link to="/nueva-visita" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary-container transition-all">
                         <span className="material-symbols-outlined text-[18px]">add</span> Agregar Visita
@@ -150,14 +206,14 @@ export const Calendario = () => {
 
                             // Para fechas pasadas: ocultar "Slots Disponibles" y "Libre"
                             const mostrarBadge = !(esPasado && (estado === 'parcial' || estado === 'disponible'));
-                            const textoBadge   = (esPasado && estado === 'parcial') ? 'Con visitas' : texto;
+                            const textoBadge = (esPasado && estado === 'parcial') ? 'Con visitas' : texto;
                             const estilosBadge = cn(
                                 "text-[11px] px-2 py-1 rounded font-bold uppercase tracking-wider truncate",
-                                estado === 'lleno'       && "bg-error-container text-on-error-container",
-                                estado === 'parcial'     && !esPasado && "bg-[#e6f4ea] text-[#137333]",
-                                estado === 'parcial'     && esPasado  && "bg-surface-container text-outline",
-                                estado === 'inhabilitado'              && "bg-surface-variant text-on-surface-variant",
-                                estado === 'disponible'  && !esPasado && "bg-surface-container-lowest text-outline border border-dashed border-outline/30"
+                                estado === 'lleno' && "bg-error-container text-on-error-container",
+                                estado === 'parcial' && !esPasado && "bg-[#e6f4ea] text-[#137333]",
+                                estado === 'parcial' && esPasado && "bg-surface-container text-outline",
+                                estado === 'inhabilitado' && "bg-surface-variant text-on-surface-variant",
+                                estado === 'disponible' && !esPasado && "bg-surface-container-lowest text-outline border border-dashed border-outline/30"
                             );
 
                             return (
@@ -239,60 +295,60 @@ export const Calendario = () => {
                                     {visitasDelDia.map((visita: any) => {
                                         const esCancelada = visita.estado === 'Cancelada';
                                         return (
-                                        <div key={visita.id} className={cn(
-                                            "p-4 border rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white transition-colors",
-                                            esCancelada
-                                                ? "border-red-200 opacity-75 hover:border-red-300"
-                                                : "border-outline-variant hover:border-primary/30"
-                                        )}>
-                                            <div className="flex gap-4 items-center">
-                                                <div className={cn(
-                                                    "w-12 h-12 rounded-full flex items-center justify-center font-bold text-md border",
-                                                    esCancelada
-                                                        ? "bg-red-50 text-red-400 border-red-200 line-through"
-                                                        : "bg-sky-100 text-sky-800 border-sky-200"
-                                                )}>
-                                                    {visita.hora_inicio.slice(0, 5)}
-                                                </div>
-
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-0.5">
-                                                        <h4 className={cn(
-                                                            "font-bold text-on-surface text-lg",
-                                                            esCancelada && "line-through text-outline"
-                                                        )}>{visita.grupo_nombre}</h4>
-                                                        {visita.tiene_cruce_tunel && (
-                                                            <span
-                                                                className="material-symbols-outlined text-amber-600 text-[18px]"
-                                                                title="Realiza cruce del túnel"
-                                                            >swap_horiz</span>
-                                                        )}
-                                                        {visita.tiene_discapacidad && (
-                                                            <span
-                                                                className="material-symbols-outlined text-secondary text-[18px]"
-                                                                title="Requiere accesibilidad"
-                                                            >accessible_forward</span>
-                                                        )}
+                                            <div key={visita.id} className={cn(
+                                                "p-4 border rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white transition-colors",
+                                                esCancelada
+                                                    ? "border-red-200 opacity-75 hover:border-red-300"
+                                                    : "border-outline-variant hover:border-primary/30"
+                                            )}>
+                                                <div className="flex gap-4 items-center">
+                                                    <div className={cn(
+                                                        "w-12 h-12 rounded-full flex items-center justify-center font-bold text-md border",
+                                                        esCancelada
+                                                            ? "bg-red-50 text-red-400 border-red-200 line-through"
+                                                            : "bg-sky-100 text-sky-800 border-sky-200"
+                                                    )}>
+                                                        {visita.hora_inicio.slice(0, 5)}
                                                     </div>
-                                                    <p className="text-sm text-on-surface-variant flex items-center gap-1">
-                                                        <span className="material-symbols-outlined text-[16px]">domain</span>
-                                                        {visita.gestor_nombre}
-                                                    </p>
+
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <h4 className={cn(
+                                                                "font-bold text-on-surface text-lg",
+                                                                esCancelada && "line-through text-outline"
+                                                            )}>{visita.grupo_nombre}</h4>
+                                                            {visita.tiene_cruce_tunel && (
+                                                                <span
+                                                                    className="material-symbols-outlined text-amber-600 text-[18px]"
+                                                                    title="Realiza cruce del túnel"
+                                                                >swap_horiz</span>
+                                                            )}
+                                                            {visita.tiene_discapacidad && (
+                                                                <span
+                                                                    className="material-symbols-outlined text-secondary text-[18px]"
+                                                                    title="Requiere accesibilidad"
+                                                                >accessible_forward</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-on-surface-variant flex items-center gap-1">
+                                                            <span className="material-symbols-outlined text-[16px]">domain</span>
+                                                            {visita.gestor_nombre}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1">
+                                                    <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold uppercase tracking-wide">
+                                                        {visita.cantidad_personas} Personas
+                                                    </span>
+                                                    <span className={cn(
+                                                        "text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide",
+                                                        BADGE_ESTADO[visita.estado] ?? 'text-outline bg-surface-container border border-outline-variant'
+                                                    )}>
+                                                        {visita.estado}
+                                                    </span>
                                                 </div>
                                             </div>
-
-                                            <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1">
-                                                <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold uppercase tracking-wide">
-                                                    {visita.cantidad_personas} Personas
-                                                </span>
-                                                <span className={cn(
-                                                    "text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide",
-                                                    BADGE_ESTADO[visita.estado] ?? 'text-outline bg-surface-container border border-outline-variant'
-                                                )}>
-                                                    {visita.estado}
-                                                </span>
-                                            </div>
-                                        </div>
                                         );
                                     })}
                                 </div>
@@ -303,6 +359,98 @@ export const Calendario = () => {
                         <div className="p-4 border-t border-surface-container bg-surface flex justify-end">
                             <Button variant="outline" onClick={cerrarModal}>Cerrar</Button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL PARA IMPRIMIR LISTADO POR RANGO --- */}
+            {modalImprimirAbierto && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+                        
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-6 border-b border-surface-container bg-white">
+                            <div>
+                                <h3 className="font-h2 text-h2 text-on-surface">Imprimir Listado</h3>
+                                <p className="font-body-md text-on-surface-variant mt-1">Selecciona el rango de fechas para exportar en PDF.</p>
+                            </div>
+                            <button 
+                                onClick={() => { setModalImprimirAbierto(false); setErrorImpresion(null); }} 
+                                disabled={generandoPDF}
+                                className="p-2 hover:bg-surface-container-low rounded-full text-on-surface-variant transition-colors disabled:opacity-50"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        {/* Cuerpo del Formulario */}
+                        <form onSubmit={handleImprimirListado}>
+                            <div className="p-6 space-y-4 bg-surface-container-lowest">
+                                {errorImpresion && (
+                                    <div className="flex items-center gap-2 p-4 bg-error-container/30 border border-error/20 rounded-xl text-error text-sm font-semibold">
+                                        <span className="material-symbols-outlined text-[20px]">error</span>
+                                        <span>{errorImpresion}</span>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-1">
+                                        <label htmlFor="fechaDesde" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Fecha Desde</label>
+                                        <input
+                                            type="date"
+                                            id="fechaDesde"
+                                            value={fechaDesde}
+                                            onChange={(e) => { setFechaDesde(e.target.value); setErrorImpresion(null); }}
+                                            required
+                                            disabled={generandoPDF}
+                                            className="px-4 py-2.5 bg-slate-50 border border-outline-variant rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none transition-shadow disabled:opacity-50"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label htmlFor="fechaHasta" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Fecha Hasta</label>
+                                        <input
+                                            type="date"
+                                            id="fechaHasta"
+                                            value={fechaHasta}
+                                            onChange={(e) => { setFechaHasta(e.target.value); setErrorImpresion(null); }}
+                                            required
+                                            disabled={generandoPDF}
+                                            className="px-4 py-2.5 bg-slate-50 border border-outline-variant rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none transition-shadow disabled:opacity-50"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-4 border-t border-surface-container bg-surface flex justify-end gap-3">
+                                <Button 
+                                    variant="outline" 
+                                    type="button"
+                                    onClick={() => { setModalImprimirAbierto(false); setErrorImpresion(null); }} 
+                                    disabled={generandoPDF}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button 
+                                    variant="primary" 
+                                    type="submit"
+                                    disabled={generandoPDF}
+                                    className="min-w-[120px] flex items-center justify-center gap-2"
+                                >
+                                    {generandoPDF ? (
+                                        <>
+                                            <span className="animate-spin material-symbols-outlined text-[18px]">sync</span>
+                                            Generando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined text-[18px]">download</span>
+                                            Descargar PDF
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

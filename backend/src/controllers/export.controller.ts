@@ -41,5 +41,28 @@ export const ExportController = {
             console.error("Error al exportar PDF diario:", error);
             res.status(500).json({ error: 'No se pudo generar el cronograma diario' });
         }
+    },
+
+    async exportarRango(req: Request, res: Response) {
+        try {
+            const fechaDesde = req.query.desde as string;
+            const fechaHasta = req.query.hasta as string;
+
+            if (!fechaDesde || !fechaHasta || !/^\d{4}-\d{2}-\d{2}$/.test(fechaDesde) || !/^\d{4}-\d{2}-\d{2}$/.test(fechaHasta)) {
+                return res.status(400).json({ error: 'Los parámetros desde y hasta son requeridos en formato YYYY-MM-DD' });
+            }
+
+            const pdfBuffer = await ExportService.generarReporteRangoPDF(fechaDesde, fechaHasta);
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=Reporte_Visitas_${fechaDesde}_a_${fechaHasta}.pdf`);
+            res.setHeader('Content-Length', pdfBuffer.length);
+
+            res.end(pdfBuffer);
+
+        } catch (error) {
+            console.error("Error al exportar PDF por rango:", error);
+            res.status(500).json({ error: 'No se pudo generar el reporte por rango de fechas' });
+        }
     }
 };

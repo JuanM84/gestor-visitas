@@ -42,16 +42,16 @@ const StatsBlocks = ({ stats, etiquetaPeriodo }: { stats: any; etiquetaPeriodo: 
                             <div className="h-48 flex items-end gap-2 overflow-x-auto pb-2">
                                 {stats.evolucion.map((dia: any, index: number) => {
                                     const personas = parseInt(dia.personas);
-                                    
+
                                     // Para que el gráfico sea altamente demostrativo y las alturas fluctúen 
                                     // de forma visible entre sí (como de 14 a 30), escalamos linealmente 
                                     // contra el pico máximo del mes actual (maxPersonas).
                                     const heightPercent = maxPersonas > 0 ? (personas / maxPersonas) * 100 : 0;
-                                    
+
                                     // La capacidad máxima permitida por día sigue siendo 1600
                                     const limiteReferencia = 1600;
                                     const porcentajeAforo = (personas / limiteReferencia) * 100;
-                                    
+
                                     // Colores dinámicos basados en la capacidad máxima de 1600 personas
                                     let colorBarra = 'bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-500/30 hover:border-emerald-500'; // Verde (< 500 personas)
                                     if (personas >= 1200) {
@@ -102,7 +102,7 @@ const StatsBlocks = ({ stats, etiquetaPeriodo }: { stats: any; etiquetaPeriodo: 
 
                 {/* Ranking Gestores */}
                 <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
-                    <h3 className="font-h3 mb-6">Top Instituciones</h3>
+                    <h3 className="font-h3 mb-6">Top Gestores</h3>
                     {stats.rankingGestores.length === 0 ? (
                         <div className="text-center text-outline py-10">Sin registros.</div>
                     ) : (

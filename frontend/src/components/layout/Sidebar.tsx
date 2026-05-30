@@ -6,7 +6,6 @@ import { useAuth } from "../../context/AuthContext";
 const navItems = [
     { name: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
     { name: 'Calendario', icon: 'calendar_today', path: '/calendario' },
-    { name: 'Visitas', icon: 'confirmation_number', path: '/visitas', roles: ['Admin'] },
     { name: 'Auditoria', icon: 'confirmation_number', path: '/auditoria', roles: ['Admin'] },
     { name: 'Gestores', icon: 'groups', path: '/gestores' },
     { name: 'Reportes', icon: 'analytics', path: '/reportes' },

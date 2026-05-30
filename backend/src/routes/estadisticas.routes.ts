@@ -8,5 +8,6 @@ router.get('/admin', verificarToken, EstadisticasController.getAdminDashboard);
 router.get('/rango', verificarToken, EstadisticasController.getStatsByRango);
 router.get('/exportar', verificarToken, ExportController.exportarMensual);
 router.get('/exportar/diario', verificarToken, ExportController.exportarDiario);
+router.get('/exportar/rango', verificarToken, ExportController.exportarRango);
 
 export default router;
