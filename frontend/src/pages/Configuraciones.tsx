@@ -274,7 +274,7 @@ export const Configuraciones = () => {
                     <form onSubmit={handleAgregarDia} className="flex flex-wrap gap-4 items-end mb-6 p-4 bg-surface-bright rounded-xl border border-surface-container-highest">
                         <div className="flex-1 min-w-[200px]">
                             <label className="font-label-sm block mb-1 text-on-surface-variant">Fecha a bloquear</label>
-                            <input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputStyles} />
+                            <input type="date" required min={new Date().toISOString().split('T')[0]} value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputStyles} />
                         </div>
                         <div className="flex-[2] min-w-[250px]">
                             <label className="font-label-sm block mb-1 text-on-surface-variant">Motivo / Descripción</label>

@@ -45,9 +45,57 @@ export const UsuarioService = {
             datos.nombre,
             datos.email,
             hashedPassword,
-            datos.rol || 'Guia'
+            datos.rol || 'Guía'
         ]);
 
         return result.rows[0];
+    },
+
+    // U-8: No desactivar el único administrador
+    async desactivarUsuario(id: string) {
+        const targetResult = await pool.query('SELECT rol, activo FROM Usuario WHERE id = $1', [id]);
+        const target = targetResult.rows[0];
+        if (!target) throw new Error('Usuario no encontrado');
+        if (!target.activo) throw new Error('El usuario ya se encuentra inactivo');
+
+        if (target.rol === 'Admin') {
+            const adminsResult = await pool.query(
+                "SELECT COUNT(*) FROM Usuario WHERE rol = 'Admin' AND activo = true"
+            );
+            if (parseInt(adminsResult.rows[0].count, 10) <= 1) {
+                throw new Error('No se puede desactivar al único administrador del sistema. Asigná otro Admin primero.');
+            }
+        }
+
+        const result = await pool.query(
+            'UPDATE Usuario SET activo = false WHERE id = $1 RETURNING id, nombre, email, rol, activo',
+            [id]
+        );
+        return result.rows[0];
+    },
+
+    // A-9: Cambio de contraseña propio (con verificación de la actual)
+    async cambiarPassword(usuarioId: string, passwordActual: string, nuevaPassword: string) {
+        const result = await pool.query('SELECT password_hash FROM Usuario WHERE id = $1', [usuarioId]);
+        const usuario = result.rows[0];
+        if (!usuario) throw new Error('Usuario no encontrado');
+
+        const esValida = await bcrypt.compare(passwordActual, usuario.password_hash);
+        if (!esValida) throw new Error('La contraseña actual es incorrecta');
+
+        if (nuevaPassword.length < 8) {
+            throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
+        }
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!passwordRegex.test(nuevaPassword)) {
+            throw new Error('La nueva contraseña debe tener al menos una mayúscula, una minúscula y un número');
+        }
+        if (nuevaPassword === passwordActual) {
+            throw new Error('La nueva contraseña debe ser diferente a la actual');
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(nuevaPassword, salt);
+        await pool.query('UPDATE Usuario SET password_hash = $1 WHERE id = $2', [hash, usuarioId]);
     }
 };

@@ -18,5 +18,47 @@ export const UsuarioController = {
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
+    },
+
+    // U-8: Desactivar usuario (soft-delete con protección del último Admin)
+    async desactivarUsuario(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const usuarioSolicitante = (req as any).usuario;
+
+            // Un usuario no puede desactivarse a sí mismo
+            if (usuarioSolicitante.id === id) {
+                return res.status(400).json({ error: 'No podés desactivar tu propia cuenta mientras tenés la sesión activa.' });
+            }
+
+            const usuario = await UsuarioService.desactivarUsuario(String(id));
+            res.status(200).json({ mensaje: `Usuario "${usuario.nombre}" desactivado correctamente`, usuario });
+        } catch (error: any) {
+            const status = error.message.includes('no encontrado') ? 404 : 400;
+            res.status(status).json({ error: error.message });
+        }
+    },
+
+    // A-9: Cambiar contraseña propia
+    async cambiarPassword(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const usuarioSolicitante = (req as any).usuario;
+
+            // Solo el propio usuario o un Admin puede cambiar la contraseña
+            if (usuarioSolicitante.id !== id && usuarioSolicitante.rol !== 'Admin') {
+                return res.status(403).json({ error: 'Solo podés cambiar tu propia contraseña.' });
+            }
+
+            const { passwordActual, nuevaPassword } = req.body;
+            if (!passwordActual || !nuevaPassword) {
+                return res.status(400).json({ error: 'La contraseña actual y la nueva contraseña son obligatorias.' });
+            }
+
+            await UsuarioService.cambiarPassword(String(id), passwordActual, nuevaPassword);
+            res.status(200).json({ mensaje: 'Contraseña actualizada correctamente.' });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
     }
 };

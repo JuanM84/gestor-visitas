@@ -3,6 +3,7 @@ import { AvailabilityService } from './disponibilidad.service';
 import { DisponibilidadRepository } from '../repositories/disponibilidad.repository';
 import { pool } from '../config/db';
 import { esTipoVisitaValido, TIPOS_VISITA, esEstadoVisitaValido, ESTADOS_VISITA } from '../types/visita.types';
+import { validarTelefono, validarEmail } from '../utils/validators';
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
@@ -131,6 +132,10 @@ export const VisitaService = {
             }
             if (!g.nombre) throw new Error('El nombre del grupo es obligatorio para particulares');
             if (!g.telefono) throw new Error('El teléfono de contacto es obligatorio');
+            // V-20: Validar formato de teléfono
+            if (!validarTelefono(g.telefono)) {
+                throw new Error('El teléfono de contacto no tiene un formato válido (ej: 0343-4000000 o +54 343 4000000)');
+            }
             if (!g.email) throw new Error('El email de contacto es obligatorio');
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(g.email)) {

@@ -1,4 +1,5 @@
 import { pool } from '../config/db';
+import { validarTelefono } from '../utils/validators';
 
 export const GestorService = {
     async obtenerTodos() {
@@ -15,6 +16,26 @@ export const GestorService = {
         // G-1: Validar nombre obligatorio
         if (!datos.nombre?.trim()) {
             throw new Error('El nombre del gestor es obligatorio');
+        }
+
+        // V-20: Validar formato de teléfono si se proporciona
+        if (datos.telefono?.trim() && !validarTelefono(datos.telefono)) {
+            throw new Error('El número de teléfono del gestor no tiene un formato válido (ej: 0343-4000000)');
+        }
+
+        // G-4: Detectar duplicado por nombre + empresa/institución
+        const nombreNorm = datos.nombre.trim().toLowerCase();
+        const empresaNorm = (datos.empresa_institucion || '').trim().toLowerCase();
+        const duplicado = await pool.query(
+            `SELECT id FROM Gestor WHERE LOWER(TRIM(nombre)) = $1 AND LOWER(TRIM(COALESCE(empresa_institucion, ''))) = $2`,
+            [nombreNorm, empresaNorm]
+        );
+        if (duplicado.rows.length > 0) {
+            throw new Error(
+                datos.empresa_institucion
+                    ? `Ya existe un gestor llamado "${datos.nombre}" en "${datos.empresa_institucion}"`
+                    : `Ya existe un gestor llamado "${datos.nombre}"`
+            );
         }
 
         const query = `
