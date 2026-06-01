@@ -23,6 +23,11 @@ export const Gestores = () => {
     const [guardando, setGuardando] = useState(false);
     const [mensajeForm, setMensajeForm] = useState({ tipo: '', texto: '' });
 
+    // Estado para la edición
+    const [gestorAEditar, setGestorAEditar] = useState<any | null>(null);
+    const [guardandoEdit, setGuardandoEdit] = useState(false);
+    const [mensajeFormEdit, setMensajeFormEdit] = useState({ tipo: '', texto: '' });
+
     const { token } = useAuth();
     const inputStyles = "w-full h-11 px-4 rounded-lg border border-outline-variant bg-surface-bright text-on-background focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all";
 
@@ -72,6 +77,37 @@ export const Gestores = () => {
         } finally {
             setGuardando(false);
             setTimeout(() => setMensajeForm({ tipo: '', texto: '' }), 4000);
+        }
+    };
+
+    const handleUpdateSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setGuardandoEdit(true);
+        setMensajeFormEdit({ tipo: '', texto: '' });
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gestores/${gestorAEditar.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(gestorAEditar)
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al actualizar el gestor');
+
+            setMensajeFormEdit({ tipo: 'exito', texto: 'Gestor actualizado correctamente.' });
+            fetchGestores();
+            setTimeout(() => {
+                setGestorAEditar(null);
+                setMensajeFormEdit({ tipo: '', texto: '' });
+            }, 1200);
+        } catch (err: any) {
+            setMensajeFormEdit({ tipo: 'error', texto: err.message });
+        } finally {
+            setGuardandoEdit(false);
         }
     };
 
@@ -128,6 +164,120 @@ export const Gestores = () => {
                                 Cerrar
                             </Button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Modal de Edición de Gestor ── */}
+            {gestorAEditar && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col">
+                        {/* Header */}
+                        <div className="bg-primary px-6 py-5 flex items-center gap-3 shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-white text-[22px]">edit</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-white text-base leading-tight truncate">Editar Gestor</h3>
+                                <p className="text-white/70 text-xs mt-0.5 truncate">{gestorAEditar.nombre}</p>
+                            </div>
+                            <button
+                                onClick={() => setGestorAEditar(null)}
+                                className="p-1 rounded-full hover:bg-white/20 text-white transition-colors shrink-0"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        {/* Cuerpo del Formulario */}
+                        <form onSubmit={handleUpdateSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+                            <div>
+                                <label className="font-label-sm block mb-1">Nombre de Institución / Persona *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={gestorAEditar.nombre}
+                                    onChange={(e) => setGestorAEditar({ ...gestorAEditar, nombre: e.target.value })}
+                                    className={inputStyles}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="font-label-sm block mb-1">Tipo de Gestor *</label>
+                                <select
+                                    value={gestorAEditar.tipo}
+                                    onChange={(e) => setGestorAEditar({ ...gestorAEditar, tipo: e.target.value })}
+                                    className={cn(inputStyles, "cursor-pointer")}
+                                >
+                                    <option value="Institución Educativa">Institución Educativa</option>
+                                    <option value="Agencia de Turismo">Agencia de Turismo</option>
+                                    <option value="Club / Asociación">Club / Asociación</option>
+                                    <option value="Particular / Organismo Público">Particular / Organismo Público</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="font-label-sm block mb-1">Empresa / Institución <span className="text-on-surface-variant font-normal">(Opcional)</span></label>
+                                <input
+                                    type="text"
+                                    value={gestorAEditar.empresa_institucion || ''}
+                                    onChange={(e) => setGestorAEditar({ ...gestorAEditar, empresa_institucion: e.target.value })}
+                                    className={inputStyles}
+                                    placeholder="Ej: Escuela Nº 5 de Paraná"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="font-label-sm block mb-1">Teléfono de Contacto <span className="text-on-surface-variant font-normal">(Opcional)</span></label>
+                                <input
+                                    type="tel"
+                                    value={gestorAEditar.telefono || ''}
+                                    onChange={(e) => setGestorAEditar({ ...gestorAEditar, telefono: e.target.value })}
+                                    className={inputStyles}
+                                    placeholder="Cod. Área + Número"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="font-label-sm block mb-1">Correo Electrónico <span className="text-on-surface-variant font-normal">(Opcional)</span></label>
+                                <input
+                                    type="email"
+                                    value={gestorAEditar.email || ''}
+                                    onChange={(e) => setGestorAEditar({ ...gestorAEditar, email: e.target.value })}
+                                    className={inputStyles}
+                                    placeholder="contacto@institucion.edu.ar"
+                                />
+                            </div>
+
+                            <UbicacionSelector
+                                value={{
+                                    localidad: gestorAEditar.localidad || '',
+                                    provincia: gestorAEditar.provincia || '',
+                                    pais: gestorAEditar.pais || 'Argentina'
+                                }}
+                                onChange={({ localidad, provincia, pais }) =>
+                                    setGestorAEditar({ ...gestorAEditar, localidad, provincia, pais })
+                                }
+                            />
+
+                            {mensajeFormEdit.texto && (
+                                <div className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium ${mensajeFormEdit.tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`}>
+                                    <span className="material-symbols-outlined text-[16px] shrink-0">
+                                        {mensajeFormEdit.tipo === 'exito' ? 'check_circle' : 'error'}
+                                    </span>
+                                    {mensajeFormEdit.texto}
+                                </div>
+                            )}
+
+                            <div className="flex gap-3 pt-4 border-t border-outline-variant shrink-0">
+                                <Button variant="outline" type="button" className="flex-1" onClick={() => setGestorAEditar(null)} disabled={guardandoEdit}>
+                                    Cancelar
+                                </Button>
+                                <Button variant="primary" type="submit" className="flex-1" disabled={guardandoEdit}>
+                                    {guardandoEdit ? 'Guardando...' : 'Guardar Cambios'}
+                                </Button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
@@ -209,7 +359,7 @@ export const Gestores = () => {
                                     <th className="p-4 font-label-md">Tipo</th>
                                     <th className="p-4 font-label-md">Ubicación</th>
                                     <th className="p-4 font-label-md">Contacto</th>
-                                    <th className="p-4 font-label-md w-14"></th>
+                                    <th className="p-4 font-label-md w-28 text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-surface-container-highest">
@@ -245,14 +395,23 @@ export const Gestores = () => {
                                                     <div className="text-xs text-outline mt-0.5">{gestor.email}</div>
                                                 )}
                                             </td>
-                                            <td className="p-4 text-center">
-                                                <button
-                                                    onClick={() => setGestorSeleccionado(gestor)}
-                                                    title="Ver datos completos"
-                                                    className="p-2 hover:bg-primary/10 rounded-full text-primary transition-colors"
-                                                >
-                                                    <span className="material-symbols-outlined text-[20px]">info</span>
-                                                </button>
+                                            <td className="p-4">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <button
+                                                        onClick={() => setGestorSeleccionado(gestor)}
+                                                        title="Ver datos completos"
+                                                        className="p-2 hover:bg-primary/10 rounded-full text-primary transition-colors"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[20px]">info</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setGestorAEditar(gestor)}
+                                                        title="Editar datos"
+                                                        className="p-2 hover:bg-primary/10 rounded-full text-primary transition-colors"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[20px]">edit</span>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))

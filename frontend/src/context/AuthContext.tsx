@@ -169,6 +169,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUsuario(null);
         setShowWarning(false);
         clearAllTimers();
+        if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+        }
     }, []);
 
     // ── Limpiar todos los timers ──────────────────────────────────────────────

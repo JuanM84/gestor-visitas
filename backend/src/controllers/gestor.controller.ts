@@ -38,5 +38,31 @@ export const GestorController = {
         } catch (error: any) {
             res.status(400).json({ error: error?.message || 'Error al guardar el gestor' });
         }
+    },
+
+    async updateGestor(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { nombre, tipo } = req.body;
+            
+            if (!id) {
+                return res.status(400).json({ error: 'El ID del gestor es obligatorio' });
+            }
+            
+            if (nombre !== undefined && !nombre.trim()) {
+                return res.status(400).json({ error: 'El nombre del gestor no puede estar vacío' });
+            }
+            
+            if (tipo && !TIPOS_GESTOR_VALIDOS.includes(tipo)) {
+                return res.status(400).json({ 
+                    error: 'El tipo de gestor no es válido. Opciones válidas: ' + TIPOS_GESTOR_VALIDOS.join(', ') 
+                });
+            }
+            
+            const gestorActualizado = await GestorService.actualizarGestor(id as string, req.body);
+            res.status(200).json({ mensaje: 'Gestor actualizado exitosamente', gestor: gestorActualizado });
+        } catch (error: any) {
+            res.status(400).json({ error: error?.message || 'Error al actualizar el gestor' });
+        }
     }
 };

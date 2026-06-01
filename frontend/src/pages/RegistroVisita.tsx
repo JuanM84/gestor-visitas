@@ -100,11 +100,11 @@ export const RegistroVisita = () => {
         fetch(`${import.meta.env.VITE_API_URL}/api/gestores`, { headers })
             .then(r => r.json())
             .then(data => { if (Array.isArray(data)) setGestores(data); })
-            .catch(() => {});
+            .catch(() => { });
         fetch(`${import.meta.env.VITE_API_URL}/api/instituciones`, { headers })
             .then(r => r.json())
             .then(data => { if (Array.isArray(data)) setInstituciones(data); })
-            .catch(() => {});
+            .catch(() => { });
     }, [token]); // Re-ejecutar cuando el token esté listo
 
     // ── Guardar nuevo gestor desde modal ──
@@ -144,7 +144,7 @@ export const RegistroVisita = () => {
                 setModalInstitucion(false);
                 setNuevaInstitucion({ nombre: '', telefono: '', email: '', localidad: '', provincia: '', pais: 'Argentina' });
             }
-        } catch {}
+        } catch { }
     };
 
     // ── Submit: valida y abre modal de confirmación ──
@@ -410,6 +410,16 @@ export const RegistroVisita = () => {
                             <div>
                                 <label className="text-xs font-bold text-outline uppercase">Empresa / Institución</label>
                                 <input className={inp} placeholder="Ej: Escuela Nº 5 de Paraná" value={nuevoGestor.empresa_institucion} onChange={e => setNuevoGestor({ ...nuevoGestor, empresa_institucion: e.target.value })} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-outline uppercase">Teléfono</label>
+                                    <input className={inp} placeholder="Cod. Área + Número" value={nuevoGestor.telefono} onChange={e => setNuevoGestor({ ...nuevoGestor, telefono: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-outline uppercase">Email</label>
+                                    <input type="email" className={inp} placeholder="contacto@institucion.edu.ar" value={nuevoGestor.email} onChange={e => setNuevoGestor({ ...nuevoGestor, email: e.target.value })} />
+                                </div>
                             </div>
                         </div>
                         <UbicacionSelector
@@ -763,11 +773,6 @@ export const RegistroVisita = () => {
                                 />
                                 <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
                                 Realiza cruce del túnel
-                                {tipoVisitante === 'Particulares' && (
-                                    <span className="ml-auto text-[10px] font-bold bg-outline-variant/30 text-on-surface-variant/60 px-2 py-0.5 rounded-full uppercase tracking-wide">
-                                        N/A Particulares
-                                    </span>
-                                )}
                             </label>
                             <label className={cn('flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-all', visita.tiene_discapacidad ? 'border-secondary bg-secondary/5 text-secondary' : 'border-outline-variant text-on-surface-variant')}>
                                 <input type="checkbox" className="w-4 h-4 accent-secondary" checked={visita.tiene_discapacidad} onChange={e => setVisita({ ...visita, tiene_discapacidad: e.target.checked })} />

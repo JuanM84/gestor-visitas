@@ -6,5 +6,6 @@ const router = Router();
 
 router.get('/', verificarToken, GestorController.getGestores);
 router.post('/', verificarToken, GestorController.createGestor);
+router.put('/:id', verificarToken, GestorController.updateGestor);
 
 export default router;
