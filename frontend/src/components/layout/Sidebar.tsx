@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { cn } from "../../utils/cn";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { ModalMiPerfil } from "../ui/ModalMiPerfil";
 
 const navItems = [
     { name: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
@@ -28,6 +29,7 @@ export const Sidebar = ({ abierto, onCerrar }: SidebarProps) => {
     const navigate = useNavigate();
     const { usuario, logout } = useAuth();
     const userRole = usuario?.rol || 'Guía';
+    const [mostrarPerfil, setMostrarPerfil] = useState(false);
 
     const visibleNavItems = navItems.filter(item =>
         !item.roles || item.roles.some(rol => rol.toLowerCase() === userRole.toLowerCase())
@@ -94,8 +96,24 @@ export const Sidebar = ({ abierto, onCerrar }: SidebarProps) => {
                     ))}
                 </ul>
 
-                {/* Botón Cerrar Sesión */}
-                <div className="px-4 py-4 border-t border-slate-200">
+                {/* Footer del sidebar */}
+                <div className="px-4 py-4 border-t border-slate-200 flex flex-col gap-1">
+                    {/* Mi Perfil */}
+                    <button
+                        id="btn-sidebar-mi-perfil"
+                        onClick={() => setMostrarPerfil(true)}
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-slate-500 hover:text-primary hover:bg-slate-50 transition-all duration-150 group"
+                    >
+                        <span className="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">
+                            manage_accounts
+                        </span>
+                        <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium">Mi Perfil</span>
+                            <span className="text-[11px] text-slate-400 truncate max-w-[140px]">{usuario?.email}</span>
+                        </div>
+                    </button>
+
+                    {/* Cerrar Sesión */}
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-slate-500 hover:text-error hover:bg-red-50 transition-all duration-150 group"
@@ -107,6 +125,11 @@ export const Sidebar = ({ abierto, onCerrar }: SidebarProps) => {
                     </button>
                 </div>
             </nav>
+
+            {/* Modal Mi Perfil */}
+            {mostrarPerfil && (
+                <ModalMiPerfil onCerrar={() => setMostrarPerfil(false)} />
+            )}
         </>
     );
 };

@@ -39,6 +39,30 @@ export const UsuarioController = {
         }
     },
 
+    // Reactivar usuario (solo Admin)
+    async reactivarUsuario(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const usuario = await UsuarioService.reactivarUsuario(String(id));
+            res.status(200).json({ mensaje: `Usuario "${usuario.nombre}" reactivado correctamente`, usuario });
+        } catch (error: any) {
+            const status = error.message.includes('no encontrado') ? 404 : 400;
+            res.status(status).json({ error: error.message });
+        }
+    },
+
+    // Actualizar datos de usuario (Admin)
+    async actualizarDatos(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { nombre, email, telefono, rol } = req.body;
+            const usuario = await UsuarioService.actualizarDatos(String(id), { nombre, email, telefono, rol });
+            res.status(200).json({ mensaje: 'Usuario actualizado correctamente.', usuario });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    },
+
     // A-9: Cambiar contraseña propia
     async cambiarPassword(req: Request, res: Response) {
         try {
@@ -60,5 +84,36 @@ export const UsuarioController = {
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
-    }
+    },
+
+    // Obtener perfil propio
+    async obtenerPerfil(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const usuarioSolicitante = (req as any).usuario;
+            if (usuarioSolicitante.id !== id) {
+                return res.status(403).json({ error: 'Solo podés ver tu propio perfil.' });
+            }
+            const usuario = await UsuarioService.obtenerPorId(String(id));
+            res.status(200).json(usuario);
+        } catch (error: any) {
+            res.status(404).json({ error: error.message });
+        }
+    },
+
+    // Actualizar perfil propio (email, teléfono)
+    async actualizarPerfil(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const usuarioSolicitante = (req as any).usuario;
+            if (usuarioSolicitante.id !== id) {
+                return res.status(403).json({ error: 'Solo podés editar tu propio perfil.' });
+            }
+            const { email, telefono } = req.body;
+            const usuario = await UsuarioService.actualizarPerfil(String(id), { email, telefono });
+            res.status(200).json({ mensaje: 'Perfil actualizado correctamente.', usuario });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    },
 };

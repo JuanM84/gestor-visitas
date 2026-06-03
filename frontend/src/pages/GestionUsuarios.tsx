@@ -30,11 +30,11 @@ export const GestionUsuarios = () => {
     const [creando, setCreando] = useState(false);
     const [mensajeForm, setMensajeForm] = useState({ tipo: '', texto: '' });
 
-    // Modal cambio de contraseña (A-9)
-    const [modalPassword, setModalPassword] = useState<any | null>(null);
-    const [pwForm, setPwForm] = useState({ actual: '', nueva: '', confirmar: '' });
-    const [guardandoPw, setGuardandoPw] = useState(false);
-    const [mensajePw, setMensajePw] = useState({ tipo: '', texto: '' });
+    // Modal editar usuario
+    const [modalEditar, setModalEditar] = useState<any | null>(null);
+    const [editForm, setEditForm] = useState({ nombre: '', email: '', telefono: '', rol: 'Guía' });
+    const [guardandoEdit, setGuardandoEdit] = useState(false);
+    const [mensajeEdit, setMensajeEdit] = useState({ tipo: '', texto: '' });
 
     const { token } = useAuth();
     const inputStyles = "w-full h-11 px-4 rounded-lg border border-outline-variant bg-surface-bright text-on-background focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition-all";
@@ -92,7 +92,7 @@ export const GestionUsuarios = () => {
 
     // ── Desactivar usuario (U-8) ───────────────────────────────────────────
     const handleDesactivar = async (usr: any) => {
-        if (!confirm(`¿Desactivar al usuario "${usr.nombre}"? No podrá iniciar sesión hasta que sea reactivado manualmente.`)) return;
+        if (!confirm(`¿Desactivar al usuario "${usr.nombre}"? No podrá iniciar sesión hasta que sea reactivado.`)) return;
 
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/${usr.id}/desactivar`, {
@@ -110,36 +110,82 @@ export const GestionUsuarios = () => {
         }
     };
 
-    // ── Cambiar contraseña (A-9) ───────────────────────────────────────────
-    const handleCambiarPassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setMensajePw({ tipo: '', texto: '' });
+    // ── Reactivar usuario ──────────────────────────────────────────────────
+    const handleReactivar = async (usr: any) => {
+        if (!confirm(`¿Reactivar al usuario "${usr.nombre}"? Podrá volver a iniciar sesión.`)) return;
 
-        if (pwForm.nueva !== pwForm.confirmar) {
-            setMensajePw({ tipo: 'error', texto: 'La nueva contraseña y su confirmación no coinciden.' });
-            return;
-        }
-
-        setGuardandoPw(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/${modalPassword.id}/password`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ passwordActual: pwForm.actual, nuevaPassword: pwForm.nueva })
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/${usr.id}/reactivar`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Error al cambiar la contraseña');
-
-            setMensajePw({ tipo: 'exito', texto: '✓ Contraseña actualizada correctamente.' });
-            setTimeout(() => {
-                setModalPassword(null);
-                setPwForm({ actual: '', nueva: '', confirmar: '' });
-                setMensajePw({ tipo: '', texto: '' });
-            }, 1800);
+            if (!res.ok) throw new Error(data.error || 'Error al reactivar usuario');
+            setMensajeGlobal({ tipo: 'exito', texto: `✓ ${data.mensaje}` });
+            fetchUsuarios();
         } catch (err: any) {
-            setMensajePw({ tipo: 'error', texto: err.message });
+            setMensajeGlobal({ tipo: 'error', texto: err.message });
         } finally {
-            setGuardandoPw(false);
+            setTimeout(() => setMensajeGlobal({ tipo: '', texto: '' }), 5000);
+        }
+    };
+
+    // ── Abrir modal de edición ─────────────────────────────────────────────
+    const abrirEditar = async (usr: any) => {
+        setMensajeEdit({ tipo: '', texto: '' });
+        // Traer datos completos del usuario (incluye teléfono)
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/${usr.id}/perfil`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = res.ok ? await res.json() : usr;
+            setEditForm({
+                nombre: data.nombre || '',
+                email: data.email || '',
+                telefono: data.telefono || '',
+                rol: data.rol || 'Guía',
+            });
+        } catch {
+            setEditForm({ nombre: usr.nombre || '', email: usr.email || '', telefono: '', rol: usr.rol || 'Guía' });
+        }
+        setModalEditar(usr);
+    };
+
+    const cerrarEditar = () => {
+        setModalEditar(null);
+        setEditForm({ nombre: '', email: '', telefono: '', rol: 'Guía' });
+        setMensajeEdit({ tipo: '', texto: '' });
+    };
+
+    // ── Guardar edición de usuario ─────────────────────────────────────────
+    const handleGuardarEdicion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editForm.nombre.trim() || !editForm.email.trim()) {
+            setMensajeEdit({ tipo: 'error', texto: 'El nombre y el correo son obligatorios.' });
+            return;
+        }
+        setGuardandoEdit(true);
+        setMensajeEdit({ tipo: '', texto: '' });
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/${modalEditar.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    nombre: editForm.nombre.trim(),
+                    email: editForm.email.trim(),
+                    telefono: editForm.telefono.trim() || null,
+                    rol: editForm.rol,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al actualizar el usuario');
+            setMensajeEdit({ tipo: 'exito', texto: '✓ Usuario actualizado correctamente.' });
+            fetchUsuarios();
+            setTimeout(() => cerrarEditar(), 1500);
+        } catch (err: any) {
+            setMensajeEdit({ tipo: 'error', texto: err.message });
+        } finally {
+            setGuardandoEdit(false);
         }
     };
 
@@ -153,7 +199,7 @@ export const GestionUsuarios = () => {
                 <p className="font-body-md text-on-surface-variant mt-2">Administre los accesos y roles del personal del túnel.</p>
             </div>
 
-            {/* Mensaje global (desactivar) */}
+            {/* Mensaje global */}
             {mensajeGlobal.texto && (
                 <div className={`${bannerCls(mensajeGlobal.tipo)} mb-4`}>
                     <span className="material-symbols-outlined text-[16px] shrink-0">
@@ -163,43 +209,75 @@ export const GestionUsuarios = () => {
                 </div>
             )}
 
-            {/* ── Modal: Cambiar contraseña (A-9) ── */}
-            {modalPassword && (
-                <Modal titulo={`Cambiar contraseña — ${modalPassword.nombre}`} onClose={() => { setModalPassword(null); setPwForm({ actual: '', nueva: '', confirmar: '' }); setMensajePw({ tipo: '', texto: '' }); }}>
-                    <form onSubmit={handleCambiarPassword} className="flex flex-col gap-4">
+            {/* ── Modal: Editar usuario ── */}
+            {modalEditar && (
+                <Modal titulo={`Editar usuario — ${modalEditar.nombre}`} onClose={cerrarEditar}>
+                    <form onSubmit={handleGuardarEdicion} className="flex flex-col gap-4">
                         <div>
-                            <label className="font-label-sm block mb-1">Contraseña actual</label>
-                            <input type="password" required value={pwForm.actual} onChange={e => setPwForm({ ...pwForm, actual: e.target.value })} className={inputStyles} placeholder="Ingresá la contraseña actual" />
-                        </div>
-                        <div>
-                            <label className="font-label-sm block mb-1">Nueva contraseña</label>
+                            <label className="font-label-sm block mb-1">Nombre completo *</label>
                             <input
-                                type="password" required minLength={8}
-                                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
-                                title="Mínimo 8 caracteres, una mayúscula, una minúscula y un número"
-                                value={pwForm.nueva} onChange={e => setPwForm({ ...pwForm, nueva: e.target.value })}
-                                className={inputStyles} placeholder="Mínimo 8 caracteres"
+                                id="input-edit-nombre"
+                                type="text"
+                                required
+                                value={editForm.nombre}
+                                onChange={e => setEditForm({ ...editForm, nombre: e.target.value })}
+                                className={inputStyles}
+                                placeholder="Nombre completo"
                             />
                         </div>
                         <div>
-                            <label className="font-label-sm block mb-1">Confirmar nueva contraseña</label>
-                            <input type="password" required value={pwForm.confirmar} onChange={e => setPwForm({ ...pwForm, confirmar: e.target.value })} className={inputStyles} placeholder="Repita la nueva contraseña" />
+                            <label className="font-label-sm block mb-1">Correo electrónico *</label>
+                            <input
+                                id="input-edit-email"
+                                type="email"
+                                required
+                                value={editForm.email}
+                                onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                                className={inputStyles}
+                                placeholder="correo@ejemplo.com"
+                            />
                         </div>
-                        <p className="text-xs text-on-surface-variant">Mínimo 8 caracteres · Al menos una mayúscula, una minúscula y un número.</p>
+                        <div>
+                            <label className="font-label-sm block mb-1">Teléfono</label>
+                            <input
+                                id="input-edit-telefono"
+                                type="tel"
+                                value={editForm.telefono}
+                                onChange={e => setEditForm({ ...editForm, telefono: e.target.value })}
+                                className={inputStyles}
+                                placeholder="+54 343 xxx-xxxx (opcional)"
+                            />
+                        </div>
+                        <div>
+                            <label className="font-label-sm block mb-1">Rol en el sistema *</label>
+                            <select
+                                id="select-edit-rol"
+                                value={editForm.rol}
+                                onChange={e => setEditForm({ ...editForm, rol: e.target.value })}
+                                className={cn(inputStyles, "cursor-pointer")}
+                            >
+                                <option value="Guía">Guía Operativo</option>
+                                <option value="Admin">Administrador</option>
+                            </select>
+                        </div>
 
-                        {mensajePw.texto && (
-                            <div className={bannerCls(mensajePw.tipo)}>
+                        <p className="text-xs text-on-surface-variant -mt-1">
+                            La contraseña no se modifica desde aquí. El usuario puede cambiarla desde su perfil.
+                        </p>
+
+                        {mensajeEdit.texto && (
+                            <div className={bannerCls(mensajeEdit.tipo)}>
                                 <span className="material-symbols-outlined text-[16px] shrink-0">
-                                    {mensajePw.tipo === 'exito' ? 'check_circle' : 'error'}
+                                    {mensajeEdit.tipo === 'exito' ? 'check_circle' : 'error'}
                                 </span>
-                                {mensajePw.texto}
+                                {mensajeEdit.texto}
                             </div>
                         )}
 
                         <div className="flex gap-3 justify-end pt-2">
-                            <Button variant="outline" type="button" onClick={() => setModalPassword(null)}>Cancelar</Button>
-                            <Button variant="primary" type="submit" disabled={guardandoPw}>
-                                {guardandoPw ? 'Guardando...' : 'Cambiar contraseña'}
+                            <Button variant="outline" type="button" onClick={cerrarEditar}>Cancelar</Button>
+                            <Button variant="primary" type="submit" disabled={guardandoEdit}>
+                                {guardandoEdit ? 'Guardando...' : 'Guardar cambios'}
                             </Button>
                         </div>
                     </form>
@@ -318,22 +396,37 @@ export const GestionUsuarios = () => {
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex gap-1 justify-end">
-                                                    {/* A-9: Cambiar contraseña */}
+                                                    {/* Editar datos del usuario */}
                                                     <button
-                                                        onClick={() => setModalPassword(usr)}
-                                                        title="Cambiar contraseña"
+                                                        id={`btn-editar-usuario-${usr.id}`}
+                                                        onClick={() => abrirEditar(usr)}
+                                                        title="Editar usuario"
                                                         className="p-2 hover:bg-secondary/10 rounded-lg text-secondary transition-colors"
                                                     >
-                                                        <span className="material-symbols-outlined text-[18px]">lock_reset</span>
+                                                        <span className="material-symbols-outlined text-[18px]">edit</span>
                                                     </button>
-                                                    {/* U-8: Desactivar (solo si está activo) */}
+
+                                                    {/* Desactivar (solo si está activo) */}
                                                     {usr.activo && (
                                                         <button
+                                                            id={`btn-desactivar-usuario-${usr.id}`}
                                                             onClick={() => handleDesactivar(usr)}
                                                             title="Desactivar usuario"
                                                             className="p-2 hover:bg-error-container rounded-lg text-error transition-colors"
                                                         >
                                                             <span className="material-symbols-outlined text-[18px]">person_off</span>
+                                                        </button>
+                                                    )}
+
+                                                    {/* Reactivar (solo si está inactivo) */}
+                                                    {!usr.activo && (
+                                                        <button
+                                                            id={`btn-reactivar-usuario-${usr.id}`}
+                                                            onClick={() => handleReactivar(usr)}
+                                                            title="Reactivar usuario"
+                                                            className="p-2 hover:bg-[#e6f4ea] rounded-lg text-[#137333] transition-colors"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[18px]">person_check</span>
                                                         </button>
                                                     )}
                                                 </div>

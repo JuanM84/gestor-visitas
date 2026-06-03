@@ -7,6 +7,7 @@ interface Usuario {
     id: string;
     nombre: string;
     email: string;
+    telefono?: string;
     rol: string;
 }
 
@@ -15,6 +16,7 @@ interface AuthContextValue {
     usuario: Usuario | null;
     login: (token: string, usuario: Usuario) => void;
     logout: () => void;
+    actualizarUsuario: (datos: Partial<Usuario>) => void;
     isAuthenticated: boolean;
     /** Minutos de inactividad antes del cierre automático (cargado de la API) */
     sessionTimeoutMinutes: number;
@@ -248,6 +250,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await loadSessionTimeout(newToken);
     }, [loadSessionTimeout]);
 
+    // ── Actualizar datos del usuario en contexto y localStorage ───────────────
+
+    const actualizarUsuario = useCallback((datos: Partial<Usuario>) => {
+        setUsuario(prev => {
+            if (!prev) return prev;
+            const updated = { ...prev, ...datos };
+            localStorage.setItem('usuario', JSON.stringify(updated));
+            return updated;
+        });
+    }, []);
+
     // ── Escuchar actividad del usuario ────────────────────────────────────────
 
     useEffect(() => {
@@ -287,7 +300,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [resetInactivityTimer]);
 
     return (
-        <AuthContext.Provider value={{ token, usuario, login, logout, isAuthenticated: !!token, sessionTimeoutMinutes }}>
+        <AuthContext.Provider value={{ token, usuario, login, logout, actualizarUsuario, isAuthenticated: !!token, sessionTimeoutMinutes }}>
             {children}
             {showWarning && token && (
                 <SessionWarningModal
