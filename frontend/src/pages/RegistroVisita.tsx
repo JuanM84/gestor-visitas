@@ -85,10 +85,10 @@ export const RegistroVisita = () => {
     // Horarios disponibles
     const horarios = (() => {
         const slots: string[] = [];
-        for (let h = 8; h <= 18; h++) {
+        for (let h = 8; h <= 17; h++) {
             const hh = h < 10 ? `0${h}` : `${h}`;
             slots.push(`${hh}:00`);
-            if (h < 18) slots.push(`${hh}:30`);
+            slots.push(`${hh}:30`);
         }
         return slots;
     })();
@@ -152,14 +152,34 @@ export const RegistroVisita = () => {
         e.preventDefault();
         setErrorSubmit(null);
 
+        // Validar Gestor obligatorio
+        if (!gestor_id && !nuevoGestor.nombre.trim()) {
+            setErrorSubmit('El Gestor es obligatorio. Seleccione uno existente o registre uno nuevo.');
+            return;
+        }
+
+        // Validar Institución / Particulares obligatorio
+        if (tipoVisitante === 'Institución') {
+            if (!institucion_id && !nuevaInstitucion.nombre.trim()) {
+                setErrorSubmit('La Institución es obligatoria. Seleccione una existente o registre una nueva.');
+                return;
+            }
+        }
+
+        if (tipoVisitante === 'Particulares') {
+            if (!particulares.nombre.trim()) {
+                setErrorSubmit('El nombre del grupo de Particulares es obligatorio.');
+                return;
+            }
+            if (!particulares.tipoMenores && !particulares.tipoAdultos) {
+                setErrorSubmit('Debe seleccionar al menos un tipo de grupo (Menores, Adultos o Mixto).');
+                return;
+            }
+        }
+
         const tipoGrupoComputado = particulares.tipoMenores && particulares.tipoAdultos
             ? 'Mixto'
             : particulares.tipoMenores ? 'Menores' : 'Adultos';
-
-        if (tipoVisitante === 'Particulares' && !particulares.tipoMenores && !particulares.tipoAdultos) {
-            setErrorSubmit('Debe seleccionar al menos un tipo de grupo.');
-            return;
-        }
 
         const payload = {
             gestor_id: gestor_id || null,
