@@ -11,7 +11,6 @@ export const EditarVisita = () => {
     const navigate = useNavigate();
     const { token } = useAuth();
 
-    // 1. Ampliamos el estado para incluir los nuevos campos
     const [formData, setFormData] = useState({
         fecha: '',
         hora_inicio: '',
@@ -20,8 +19,12 @@ export const EditarVisita = () => {
         tipo: 'Salón de visitas',
         tiene_cruce_tunel: false,
         tiene_discapacidad: false,
-        discapacidad_detalle: ''
+        discapacidad_detalle: '',
+        observaciones: ''
     });
+
+    // Guardamos el tipo de visitante para mostrar el label correcto en observaciones
+    const [tipoVisitante, setTipoVisitante] = useState<string>('');
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -37,16 +40,18 @@ export const EditarVisita = () => {
 
                 const data = await response.json();
 
-                // 2. Pre-llenamos el formulario asegurando los formatos correctos
+                setTipoVisitante(data.tipo_visitante || '');
+
                 setFormData({
                     fecha: data.fecha.split('T')[0],
-                    hora_inicio: data.hora_inicio.slice(0, 5), // Cortamos a HH:MM para el input time
+                    hora_inicio: data.hora_inicio.slice(0, 5),
                     cantidad_personas: data.cantidad_personas,
                     estado: data.estado,
                     tipo: data.tipo || 'Salón de visitas',
                     tiene_cruce_tunel: data.tiene_cruce_tunel || false,
                     tiene_discapacidad: data.tiene_discapacidad || false,
-                    discapacidad_detalle: data.discapacidad_detalle || ''
+                    discapacidad_detalle: data.discapacidad_detalle || '',
+                    observaciones: data.observaciones || ''
                 });
             } catch (err: any) {
                 setError(err.message);
@@ -62,7 +67,6 @@ export const EditarVisita = () => {
         setSaving(true);
         setError(null);
 
-        // Si desmarcan accesibilidad, limpiamos el detalle por las dudas
         const dataToSend = {
             ...formData,
             discapacidad_detalle: formData.tiene_discapacidad ? formData.discapacidad_detalle : ''
@@ -92,6 +96,14 @@ export const EditarVisita = () => {
     };
 
     const inputStyles = "w-full h-11 px-4 rounded-lg border border-outline-variant bg-surface-bright text-on-background focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition-all";
+    const textareaStyles = "w-full px-4 py-3 rounded-lg border border-outline-variant bg-surface-bright text-on-background focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition-all resize-none";
+
+    // Label descriptivo según tipo de visitante
+    const labelObservaciones = tipoVisitante === 'Institución'
+        ? 'Observaciones sobre la institución o el grupo escolar'
+        : tipoVisitante === 'Particulares'
+            ? 'Observaciones sobre el grupo de particulares'
+            : 'Observaciones';
 
     if (loading) return <div className="p-8 text-center animate-pulse">Cargando datos...</div>;
 
@@ -103,7 +115,7 @@ export const EditarVisita = () => {
                 </button>
                 <div>
                     <h1 className="font-h2 text-h2 text-on-surface">Modificar Visita</h1>
-                    <p className="font-body-md text-on-surface-variant">Actualice los datos de agenda y requerimientos.</p>
+                    <p className="font-body-md text-on-surface-variant">Actualice los datos de agenda, requerimientos y observaciones.</p>
                 </div>
             </div>
 
@@ -142,11 +154,11 @@ export const EditarVisita = () => {
                     </div>
                 </div>
 
-                {/* 2. Requerimientos Especiales */}
+                {/* 2. Requerimientos Especiales y Observaciones */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-container-low p-6 rounded-2xl border border-surface-container">
                     <h3 className="md:col-span-2 font-bold text-primary flex items-center gap-2 mb-2">
                         <span className="material-symbols-outlined text-[20px]">tune</span>
-                        Requerimientos Especiales
+                        Requerimientos y Observaciones
                     </h3>
 
                     <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-outline-variant">
@@ -180,6 +192,22 @@ export const EditarVisita = () => {
                             />
                         </div>
                     )}
+
+                    {/* Campo Observaciones */}
+                    <div className="md:col-span-2">
+                        <label className="font-label-sm block mb-1 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[15px] text-on-surface-variant">notes</span>
+                            {labelObservaciones}
+                            <span className="text-outline font-normal ml-1">(opcional)</span>
+                        </label>
+                        <textarea
+                            rows={3}
+                            placeholder="Ingrese cualquier observación relevante sobre el grupo o la visita..."
+                            value={formData.observaciones}
+                            onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                            className={textareaStyles}
+                        />
+                    </div>
                 </div>
 
                 {/* 3. Estado */}

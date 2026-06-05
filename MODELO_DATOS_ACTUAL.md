@@ -25,8 +25,9 @@ erDiagram
         string id PK
         string nombre
         string email UK
+        string telefono "nullable"
         string password_hash
-        string rol "Admin, Gestor, Auditor"
+        string rol "Admin, Guía"
         boolean activo
     }
 
@@ -126,8 +127,12 @@ erDiagram
 * **Hoy**: Se adoptó la convención estándar de bases de datos relacionales en snake_case con sufijo `_id` (`gestor_id`, `usuario_registro_id`, `grupo_id`, `institucion_id`).
 
 ### 5. Definición Exacta de Tipos, Enums y Accesibilidad
-* **Roles de Usuario**: Se estandarizó en `'Admin'`, `'Gestor'`, `'Auditor'` (en lugar de *Guía / Admin*).
+* **Roles de Usuario**: Se estandarizó en `'Admin'` y `'Guía'` como roles operativos del sistema.
 * **Tipos de Visita**: Definidos estrictamente como `'Salón de visitas'` o `'Salón + Sala de Comando'` (en lugar de *Complejo/Sala/Descanso*).
 * **Estados de la Visita**: Simplificado a `'Agendada'`, `'Cancelada'` y `'Realizada'` (en lugar de *Agendada/En Curso*).
 * **Accesibilidad e Integración**: Se agregaron formalmente las columnas `tiene_discapacidad` y `discapacidad_detalle` en `Visita` para cumplir con las políticas de accesibilidad.
 * **Ubicaciones Normalizadas**: Se incorporaron campos geográficos (`localidad`, `provincia`, `pais`) en `Gestor`, `Institucion` y `Grupo` para soportar la integración con la API de Georeferenciación.
+
+### 6. Datos de Contacto en `Usuario` (Nuevo)
+* **Antes**: La entidad `Usuario` solo almacenaba credenciales y rol (sin datos de contacto propios).
+* **Hoy**: Se incorporó la columna `telefono VARCHAR(30) DEFAULT NULL` a la tabla `Usuario`. Esto permite que cada usuario registre su número de contacto desde su propio perfil, sin requerir intervención del administrador.

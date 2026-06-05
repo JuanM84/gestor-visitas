@@ -122,5 +122,17 @@ async getById(id: string) {
     ]);
 
     return result.rows[0];
+  },
+
+  async updateGrupoObservaciones(visitaId: string, observaciones: string | null) {
+    // Actualiza las observaciones del Grupo vinculado a la visita
+    const query = `
+      UPDATE Grupo
+      SET observaciones = $1
+      WHERE id = (SELECT grupo_id FROM Visita WHERE id = $2)
+      RETURNING observaciones;
+    `;
+    const result = await pool.query(query, [observaciones, visitaId]);
+    return result.rows[0];
   }
 };

@@ -74,6 +74,7 @@ interface ModificarVisitaDto {
     tiene_cruce_tunel?: boolean;
     tiene_discapacidad?: boolean;
     discapacidad_detalle?: string;
+    observaciones?: string;
 }
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -366,30 +367,46 @@ export const VisitaService = {
         }
 
         const estadoCambio = datos.estado !== undefined && datos.estado !== visitaActual.estado;
+        const fechaLimpia = visitaActual.fecha ? new Date(visitaActual.fecha).toLocaleDateString('es-AR') : id;
 
-        if (estadoCambio) {
-            const client = await pool.connect();
-            try {
-                await client.query('BEGIN');
-                const visitaActualizada = await VisitaRepository.updateVisita(id, datos);
-                const fechaLimpia = visitaActual.fecha ? new Date(visitaActual.fecha).toLocaleDateString('es-AR') : id;
-                const accion = `Cambió estado de visita del grupo "${visitaActual.grupo_nombre}" (${fechaLimpia}) de "${visitaActual.estado}" a "${datos.estado}"`;
-                await client.query(`INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`, [usuarioId, accion]);
-                await client.query('COMMIT');
-                return visitaActualizada;
-            } catch (error) {
-                await client.query('ROLLBACK');
-                throw error;
-            } finally {
-                client.release();
-            }
-        }
-
-        // Sin cambio de estado: update igualmente dentro de una transacción
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
+
+            // Actualizar datos de la visita
             const visitaActualizada = await VisitaRepository.updateVisita(id, datos);
+
+            // Actualizar observaciones en la tabla Grupo si se enviaron
+            if (datos.observaciones !== undefined) {
+                const obsValue = datos.observaciones.trim() !== '' ? datos.observaciones.trim() : null;
+                await VisitaRepository.updateGrupoObservaciones(id, obsValue);
+            }
+
+            // Construir mensaje de auditoría descriptivo
+            const cambios: string[] = [];
+            if (estadoCambio) {
+                cambios.push(`estado de "${visitaActual.estado}" a "${datos.estado}"`);
+            }
+            if (datos.fecha !== undefined && datos.fecha !== new Date(visitaActual.fecha).toLocaleDateString('fr-CA')) {
+                cambios.push(`fecha a ${datos.fecha}`);
+            }
+            if (datos.hora_inicio !== undefined && datos.hora_inicio !== visitaActual.hora_inicio) {
+                cambios.push(`hora a ${datos.hora_inicio}`);
+            }
+            if (datos.cantidad_personas !== undefined && datos.cantidad_personas !== visitaActual.cantidad_personas) {
+                cambios.push(`cantidad de personas a ${datos.cantidad_personas}`);
+            }
+            if (datos.observaciones !== undefined) {
+                cambios.push('observaciones del grupo');
+            }
+
+            const descripcionCambios = cambios.length > 0
+                ? cambios.join(', ')
+                : 'datos de la visita';
+
+            const accion = `Editó visita del grupo "${visitaActual.grupo_nombre}" (${fechaLimpia}): modificó ${descripcionCambios}`;
+            await client.query(`INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`, [usuarioId, accion]);
+
             await client.query('COMMIT');
             return visitaActualizada;
         } catch (error) {

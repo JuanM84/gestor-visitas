@@ -17,8 +17,9 @@ erDiagram
         string id PK
         string nombre
         string email UK
+        string telefono "nullable"
         string password_hash
-        string rol "Admin, Gestor, Auditor"
+        string rol "Admin, Guía"
         boolean activo
         timestamp created_at
     }
@@ -102,9 +103,10 @@ erDiagram
 
 ### 1. **USUARIO**
 Gestiona los usuarios del sistema
-- **Roles**: Admin, Gestor, Auditor
+- **Roles**: Admin, Guía
 - Autenticación por email/password
-- Control de activación/desactivación
+- Datos de contacto propios: `email` y `telefono` (editables por el propio usuario desde su perfil)
+- Control de activación/desactivación (el Admin puede desactivar y reactivar cuentas)
 
 ### 2. **GESTOR**
 Personas/instituciones que coordinan visitas
