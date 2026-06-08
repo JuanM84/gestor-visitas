@@ -70,6 +70,83 @@ export const EstadisticasService = {
         `;
         const desglosePorNivelResult = await pool.query(desglosePorNivelQuery, [mes, anio]);
 
+        // Desglose por provincia argentina
+        const desglosePorProvinciaQuery = `
+            SELECT
+                COALESCE(NULLIF(TRIM(gr.provincia), ''), 'Sin especificar') AS provincia,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE EXTRACT(MONTH FROM v.fecha) = $1
+              AND EXTRACT(YEAR FROM v.fecha) = $2
+              AND v.estado != 'Cancelada'
+              AND UPPER(TRIM(COALESCE(gr.pais, ''))) IN ('ARGENTINA', '')
+              AND gr.provincia IS NOT NULL AND TRIM(gr.provincia) != ''
+            GROUP BY provincia
+            ORDER BY total_personas DESC
+            LIMIT 15
+        `;
+        const desglosePorProvinciaResult = await pool.query(desglosePorProvinciaQuery, [mes, anio]);
+
+        // Localidades de Entre Ríos
+        const localidadesEntreRiosQuery = `
+            SELECT
+                COALESCE(NULLIF(TRIM(gr.localidad), ''), 'Sin especificar') AS localidad,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE EXTRACT(MONTH FROM v.fecha) = $1
+              AND EXTRACT(YEAR FROM v.fecha) = $2
+              AND v.estado != 'Cancelada'
+              AND LOWER(TRIM(COALESCE(gr.provincia, ''))) ILIKE '%entre r%'
+              AND gr.localidad IS NOT NULL AND TRIM(gr.localidad) != ''
+            GROUP BY localidad
+            ORDER BY total_personas DESC
+            LIMIT 20
+        `;
+        const localidadesEntreRiosResult = await pool.query(localidadesEntreRiosQuery, [mes, anio]);
+
+        // Localidades de Santa Fe
+        const localidadesSantaFeQuery = `
+            SELECT
+                COALESCE(NULLIF(TRIM(gr.localidad), ''), 'Sin especificar') AS localidad,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE EXTRACT(MONTH FROM v.fecha) = $1
+              AND EXTRACT(YEAR FROM v.fecha) = $2
+              AND v.estado != 'Cancelada'
+              AND LOWER(TRIM(COALESCE(gr.provincia, ''))) ILIKE '%santa fe%'
+              AND gr.localidad IS NOT NULL AND TRIM(gr.localidad) != ''
+            GROUP BY localidad
+            ORDER BY total_personas DESC
+            LIMIT 20
+        `;
+        const localidadesSantaFeResult = await pool.query(localidadesSantaFeQuery, [mes, anio]);
+
+        // Origen: Argentina vs. Extranjeros
+        const origenQuery = `
+            SELECT
+                CASE
+                    WHEN UPPER(TRIM(COALESCE(gr.pais, 'ARGENTINA'))) = 'ARGENTINA' OR TRIM(COALESCE(gr.pais, '')) = ''
+                    THEN 'Argentina'
+                    ELSE 'Extranjeros'
+                END AS origen,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE EXTRACT(MONTH FROM v.fecha) = $1
+              AND EXTRACT(YEAR FROM v.fecha) = $2
+              AND v.estado != 'Cancelada'
+            GROUP BY origen
+            ORDER BY total_personas DESC
+        `;
+        const origenResult = await pool.query(origenQuery, [mes, anio]);
+
         return {
             kpis: {
                 visitas: parseInt(kpis.total_visitas),
@@ -80,7 +157,11 @@ export const EstadisticasService = {
             rankingGestores: rankingResult.rows,
             evolucion: evolucionResult.rows,
             distribucionTipo: distribucionTipoResult.rows,
-            desglosePorNivel: desglosePorNivelResult.rows
+            desglosePorNivel: desglosePorNivelResult.rows,
+            desglosePorProvincia: desglosePorProvinciaResult.rows,
+            localidadesEntreRios: localidadesEntreRiosResult.rows,
+            localidadesSantaFe: localidadesSantaFeResult.rows,
+            origenVisitantes: origenResult.rows
         };
     },
 
@@ -149,6 +230,79 @@ export const EstadisticasService = {
         `;
         const desglosePorNivelResult = await pool.query(desglosePorNivelQuery, [fechaDesde, fechaHasta]);
 
+        // Desglose por provincia argentina
+        const desglosePorProvinciaQuery = `
+            SELECT
+                COALESCE(NULLIF(TRIM(gr.provincia), ''), 'Sin especificar') AS provincia,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE v.fecha BETWEEN $1 AND $2
+              AND v.estado != 'Cancelada'
+              AND UPPER(TRIM(COALESCE(gr.pais, ''))) IN ('ARGENTINA', '')
+              AND gr.provincia IS NOT NULL AND TRIM(gr.provincia) != ''
+            GROUP BY provincia
+            ORDER BY total_personas DESC
+            LIMIT 15
+        `;
+        const desglosePorProvinciaResult = await pool.query(desglosePorProvinciaQuery, [fechaDesde, fechaHasta]);
+
+        // Localidades de Entre Ríos
+        const localidadesEntreRiosQuery = `
+            SELECT
+                COALESCE(NULLIF(TRIM(gr.localidad), ''), 'Sin especificar') AS localidad,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE v.fecha BETWEEN $1 AND $2
+              AND v.estado != 'Cancelada'
+              AND LOWER(TRIM(COALESCE(gr.provincia, ''))) ILIKE '%entre r%'
+              AND gr.localidad IS NOT NULL AND TRIM(gr.localidad) != ''
+            GROUP BY localidad
+            ORDER BY total_personas DESC
+            LIMIT 20
+        `;
+        const localidadesEntreRiosResult = await pool.query(localidadesEntreRiosQuery, [fechaDesde, fechaHasta]);
+
+        // Localidades de Santa Fe
+        const localidadesSantaFeQuery = `
+            SELECT
+                COALESCE(NULLIF(TRIM(gr.localidad), ''), 'Sin especificar') AS localidad,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE v.fecha BETWEEN $1 AND $2
+              AND v.estado != 'Cancelada'
+              AND LOWER(TRIM(COALESCE(gr.provincia, ''))) ILIKE '%santa fe%'
+              AND gr.localidad IS NOT NULL AND TRIM(gr.localidad) != ''
+            GROUP BY localidad
+            ORDER BY total_personas DESC
+            LIMIT 20
+        `;
+        const localidadesSantaFeResult = await pool.query(localidadesSantaFeQuery, [fechaDesde, fechaHasta]);
+
+        // Origen: Argentina vs. Extranjeros
+        const origenQuery = `
+            SELECT
+                CASE
+                    WHEN UPPER(TRIM(COALESCE(gr.pais, 'ARGENTINA'))) = 'ARGENTINA' OR TRIM(COALESCE(gr.pais, '')) = ''
+                    THEN 'Argentina'
+                    ELSE 'Extranjeros'
+                END AS origen,
+                COUNT(v.id)              AS cantidad_visitas,
+                SUM(v.cantidad_personas) AS total_personas
+            FROM Visita v
+            JOIN Grupo gr ON v.grupo_id = gr.id
+            WHERE v.fecha BETWEEN $1 AND $2
+              AND v.estado != 'Cancelada'
+            GROUP BY origen
+            ORDER BY total_personas DESC
+        `;
+        const origenResult = await pool.query(origenQuery, [fechaDesde, fechaHasta]);
+
         return {
             kpis: {
                 visitas: parseInt(kpis.total_visitas),
@@ -159,7 +313,11 @@ export const EstadisticasService = {
             rankingGestores: rankingResult.rows,
             evolucion: evolucionResult.rows,
             distribucionTipo: distribucionTipoResult.rows,
-            desglosePorNivel: desglosePorNivelResult.rows
+            desglosePorNivel: desglosePorNivelResult.rows,
+            desglosePorProvincia: desglosePorProvinciaResult.rows,
+            localidadesEntreRios: localidadesEntreRiosResult.rows,
+            localidadesSantaFe: localidadesSantaFeResult.rows,
+            origenVisitantes: origenResult.rows
         };
     }
 };

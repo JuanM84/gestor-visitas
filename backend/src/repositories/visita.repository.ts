@@ -91,7 +91,7 @@ async getById(id: string) {
     return res.rows[0];
   },
 
-  async updateVisita(id: string, datos: any) {
+  async updateVisita(id: string, datos: any, client?: any) {
     const query = `
       UPDATE Visita 
       SET 
@@ -109,7 +109,8 @@ async getById(id: string) {
 
     const detalleDiscapacidad = datos.tiene_discapacidad ? datos.discapacidad_detalle : null;
 
-    const result = await pool.query(query, [
+    const db = client || pool;
+    const result = await db.query(query, [
       datos.fecha,
       datos.hora_inicio,
       datos.cantidad_personas,
@@ -124,7 +125,7 @@ async getById(id: string) {
     return result.rows[0];
   },
 
-  async updateGrupoObservaciones(visitaId: string, observaciones: string | null) {
+  async updateGrupoObservaciones(visitaId: string, observaciones: string | null, client?: any) {
     // Actualiza las observaciones del Grupo vinculado a la visita
     const query = `
       UPDATE Grupo
@@ -132,7 +133,28 @@ async getById(id: string) {
       WHERE id = (SELECT grupo_id FROM Visita WHERE id = $2)
       RETURNING observaciones;
     `;
-    const result = await pool.query(query, [observaciones, visitaId]);
+    const db = client || pool;
+    const result = await db.query(query, [observaciones, visitaId]);
     return result.rows[0];
+  },
+
+  async updateGestorVisita(visitaId: string, gestorId: string, client: any) {
+    // Actualiza gestor_id tanto en la tabla Visita como en la tabla Grupo
+    await client.query(
+      `UPDATE Visita SET gestor_id = $1 WHERE id = $2`,
+      [gestorId, visitaId]
+    );
+    await client.query(
+      `UPDATE Grupo SET gestor_id = $1 WHERE id = (SELECT grupo_id FROM Visita WHERE id = $2)`,
+      [gestorId, visitaId]
+    );
+  },
+
+  async updateInstitucionGrupo(visitaId: string, institucionId: string | null, client: any) {
+    // Actualiza la institución del Grupo vinculado a la visita
+    await client.query(
+      `UPDATE Grupo SET institucion_id = $1 WHERE id = (SELECT grupo_id FROM Visita WHERE id = $2)`,
+      [institucionId, visitaId]
+    );
   }
 };

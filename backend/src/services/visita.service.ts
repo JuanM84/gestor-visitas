@@ -75,6 +75,12 @@ interface ModificarVisitaDto {
     tiene_discapacidad?: boolean;
     discapacidad_detalle?: string;
     observaciones?: string;
+    // Campos para cambiar gestor
+    gestor_id?: string;
+    nuevoGestor?: NuevoGestorDto;
+    // Campos para cambiar institución (solo aplica a visitas tipo Institución)
+    institucion_id?: string;
+    nuevaInstitucion?: NuevaInstitucionDto;
 }
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -373,17 +379,88 @@ export const VisitaService = {
         try {
             await client.query('BEGIN');
 
-            // Actualizar datos de la visita
-            const visitaActualizada = await VisitaRepository.updateVisita(id, datos);
+            const cambios: string[] = [];
 
-            // Actualizar observaciones en la tabla Grupo si se enviaron
-            if (datos.observaciones !== undefined) {
-                const obsValue = datos.observaciones.trim() !== '' ? datos.observaciones.trim() : null;
-                await VisitaRepository.updateGrupoObservaciones(id, obsValue);
+            // ── Cambio de Gestor ────────────────────────────────────────────────
+            let gestorIdFinal: string | undefined = undefined;
+            if (datos.gestor_id && datos.gestor_id !== String(visitaActual.gestor_id)) {
+                // Gestor existente seleccionado
+                const resGestor = await client.query('SELECT nombre FROM Gestor WHERE id = $1', [datos.gestor_id]);
+                if (resGestor.rows.length === 0) throw new Error('El gestor seleccionado no existe');
+                gestorIdFinal = datos.gestor_id;
+                cambios.push(`gestor a "${resGestor.rows[0].nombre}"`);
+            } else if (datos.nuevoGestor?.nombre?.trim()) {
+                // Crear nuevo gestor
+                const ng = datos.nuevoGestor;
+                const resGestor = await client.query(
+                    `INSERT INTO Gestor (nombre, tipo, empresa_institucion, telefono, email, localidad, provincia, pais)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, nombre`,
+                    [
+                        ng.nombre.trim(),
+                        (ng as any).tipo || 'Institución Educativa',
+                        ng.empresa_institucion || null,
+                        ng.telefono || null,
+                        ng.email || null,
+                        ng.localidad || null,
+                        ng.provincia || null,
+                        ng.pais || 'Argentina'
+                    ]
+                );
+                gestorIdFinal = resGestor.rows[0].id;
+                cambios.push(`gestor a nuevo "${resGestor.rows[0].nombre}"`);
             }
 
-            // Construir mensaje de auditoría descriptivo
-            const cambios: string[] = [];
+            if (gestorIdFinal) {
+                await VisitaRepository.updateGestorVisita(id, gestorIdFinal, client);
+            }
+
+            // ── Cambio de Institución (solo para visitas tipo Institución) ───────
+            if (visitaActual.tipo_visitante === 'Institución') {
+                if (datos.institucion_id && datos.institucion_id !== String(visitaActual.institucion_id)) {
+                    // Institución existente seleccionada
+                    const resInst = await client.query('SELECT nombre FROM Institucion WHERE id = $1', [datos.institucion_id]);
+                    if (resInst.rows.length === 0) throw new Error('La institución seleccionada no existe');
+                    await VisitaRepository.updateInstitucionGrupo(id, datos.institucion_id, client);
+                    // Actualizar el nombre del grupo con el nombre de la nueva institución
+                    await client.query(
+                        `UPDATE Grupo SET nombre = $1 WHERE id = (SELECT grupo_id FROM Visita WHERE id = $2)`,
+                        [resInst.rows[0].nombre, id]
+                    );
+                    cambios.push(`institución a "${resInst.rows[0].nombre}"`);
+                } else if (datos.nuevaInstitucion?.nombre?.trim()) {
+                    // Crear nueva institución
+                    const ni = datos.nuevaInstitucion;
+                    const resInst = await client.query(
+                        `INSERT INTO Institucion (nombre, telefono, email, localidad, provincia, pais)
+                         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, nombre`,
+                        [
+                            ni.nombre.trim(),
+                            ni.telefono || null,
+                            ni.email || null,
+                            ni.localidad || null,
+                            ni.provincia || null,
+                            ni.pais || 'Argentina'
+                        ]
+                    );
+                    await VisitaRepository.updateInstitucionGrupo(id, resInst.rows[0].id, client);
+                    await client.query(
+                        `UPDATE Grupo SET nombre = $1 WHERE id = (SELECT grupo_id FROM Visita WHERE id = $2)`,
+                        [resInst.rows[0].nombre, id]
+                    );
+                    cambios.push(`institución a nueva "${resInst.rows[0].nombre}"`);
+                }
+            }
+
+            // ── Actualizar datos base de la visita ──────────────────────────────
+            const visitaActualizada = await VisitaRepository.updateVisita(id, datos, client);
+
+            // ── Actualizar observaciones en la tabla Grupo ──────────────────────
+            if (datos.observaciones !== undefined) {
+                const obsValue = datos.observaciones.trim() !== '' ? datos.observaciones.trim() : null;
+                await VisitaRepository.updateGrupoObservaciones(id, obsValue, client);
+            }
+
+            // ── Construir mensaje de auditoría ────────────────────────────────
             if (estadoCambio) {
                 cambios.push(`estado de "${visitaActual.estado}" a "${datos.estado}"`);
             }
@@ -404,7 +481,7 @@ export const VisitaService = {
                 ? cambios.join(', ')
                 : 'datos de la visita';
 
-            const accion = `Editó visita del grupo "${visitaActual.grupo_nombre}" (${fechaLimpia}): modificó ${descripcionCambios}`;
+            const accion = `Editó visita del grupo "${visitaActual.grupo_nombre}" (${fechaLimpia}): modificó ${descripcionCambios}`;
             await client.query(`INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`, [usuarioId, accion]);
 
             await client.query('COMMIT');

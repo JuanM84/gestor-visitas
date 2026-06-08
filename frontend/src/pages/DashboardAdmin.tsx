@@ -28,103 +28,94 @@ const StatsBlocks = ({ stats, etiquetaPeriodo }: { stats: any; etiquetaPeriodo: 
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Gráfico Evolución */}
-                <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-outline-variant shadow-sm flex flex-col justify-between">
+            {/* Gráfico Evolución — fila completa */}
+            <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm flex flex-col justify-between">
+                <div>
+                    <h3 className="font-h3 mb-1">Evolución de Ocupación</h3>
+                    <p className="text-xs text-outline mb-6">{etiquetaPeriodo}</p>
+                </div>
+                {stats.evolucion.length === 0 ? (
+                    <div className="text-center text-outline py-10">No hay datos registrados en este período.</div>
+                ) : (
                     <div>
-                        <h3 className="font-h3 mb-1">Evolución de Ocupación</h3>
-                        <p className="text-xs text-outline mb-6">{etiquetaPeriodo}</p>
-                    </div>
-                    {stats.evolucion.length === 0 ? (
-                        <div className="text-center text-outline py-10">No hay datos registrados en este período.</div>
-                    ) : (
-                        <div>
-                            <div className="h-48 flex items-end gap-2 overflow-x-auto pb-2">
-                                {stats.evolucion.map((dia: any, index: number) => {
-                                    const personas = parseInt(dia.personas);
-
-                                    // Para que el gráfico sea altamente demostrativo y las alturas fluctúen 
-                                    // de forma visible entre sí (como de 14 a 30), escalamos linealmente 
-                                    // contra el pico máximo del mes actual (maxPersonas).
-                                    const heightPercent = maxPersonas > 0 ? (personas / maxPersonas) * 100 : 0;
-
-                                    // La capacidad máxima permitida por día sigue siendo 1600
-                                    const limiteReferencia = 1600;
-                                    const porcentajeAforo = (personas / limiteReferencia) * 100;
-
-                                    // Colores dinámicos basados en la capacidad máxima de 1600 personas
-                                    let colorBarra = 'bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-500/30 hover:border-emerald-500'; // Verde (< 500 personas)
-                                    if (personas >= 1200) {
-                                        colorBarra = 'bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 hover:border-rose-500'; // Rojo (≥ 1200 personas)
-                                    } else if (personas >= 500) {
-                                        colorBarra = 'bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 hover:border-amber-500'; // Amarillo (500 - 1200 personas)
-                                    }
-
-                                    return (
-                                        <div key={index} className="flex flex-col items-center flex-1 min-w-[30px] group h-full justify-end">
-                                            <div
-                                                className={`w-full ${colorBarra} rounded-t-md transition-all relative`}
-                                                style={{ height: `${heightPercent}%`, minHeight: '12px' }}
-                                            >
-                                                {/* Tooltip premium */}
-                                                <div className="opacity-0 group-hover:opacity-100 absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-container-highest text-on-surface text-[10px] font-bold py-1.5 px-2.5 rounded-lg border border-outline-variant shadow-md pointer-events-none transition-opacity z-10 whitespace-nowrap">
-                                                    <span className="block text-[8px] text-outline font-normal">Ocupación</span>
-                                                    {personas} personas ({porcentajeAforo.toFixed(1)}% del aforo)
-                                                </div>
+                        <div className="h-48 flex items-end gap-2 overflow-x-auto pb-2">
+                            {stats.evolucion.map((dia: any, index: number) => {
+                                const personas = parseInt(dia.personas);
+                                const heightPercent = maxPersonas > 0 ? (personas / maxPersonas) * 100 : 0;
+                                const limiteReferencia = 1600;
+                                const porcentajeAforo = (personas / limiteReferencia) * 100;
+                                let colorBarra = 'bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-500/30 hover:border-emerald-500';
+                                if (personas >= 1200) {
+                                    colorBarra = 'bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 hover:border-rose-500';
+                                } else if (personas >= 500) {
+                                    colorBarra = 'bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 hover:border-amber-500';
+                                }
+                                return (
+                                    <div key={index} className="flex flex-col items-center flex-1 min-w-[30px] group h-full justify-end">
+                                        <div
+                                            className={`w-full ${colorBarra} rounded-t-md transition-all relative`}
+                                            style={{ height: `${heightPercent}%`, minHeight: '12px' }}
+                                        >
+                                            <div className="opacity-0 group-hover:opacity-100 absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-container-highest text-on-surface text-[10px] font-bold py-1.5 px-2.5 rounded-lg border border-outline-variant shadow-md pointer-events-none transition-opacity z-10 whitespace-nowrap">
+                                                <span className="block text-[8px] text-outline font-normal">Ocupación</span>
+                                                {personas} personas ({porcentajeAforo.toFixed(1)}% del aforo)
                                             </div>
-                                            <span className="text-[10px] text-outline mt-2 font-bold">{dia.dia}</span>
                                         </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Leyenda de colores */}
-                            <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-outline-variant text-[11px] font-bold justify-between items-center text-on-surface-variant">
-                                <span className="text-[10px] text-outline font-medium">Aforo Diario Máximo: 1600 personas</span>
-                                <div className="flex flex-wrap gap-4">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500"></span>
-                                        Baja Ocupación (&lt; 500 pers.)
+                                        <span className="text-[10px] text-outline mt-2 font-bold">{dia.dia}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500"></span>
-                                        Media Ocupación (500 - 1200 pers.)
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500/20 border border-rose-500"></span>
-                                        Alta Ocupación (&ge; 1200 pers. / Máx 1600)
-                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-outline-variant text-[11px] font-bold justify-between items-center text-on-surface-variant">
+                            <span className="text-[10px] text-outline font-medium">Aforo Diario Máximo: 1600 personas</span>
+                            <div className="flex flex-wrap gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500"></span>
+                                    Baja Ocupación (&lt; 500 pers.)
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500"></span>
+                                    Media Ocupación (500 - 1200 pers.)
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500/20 border border-rose-500"></span>
+                                    Alta Ocupación (&ge; 1200 pers. / Máx 1600)
                                 </div>
                             </div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
+            </div>
 
-                {/* Ranking Gestores */}
-                <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
-                    <h3 className="font-h3 mb-6">Top Gestores</h3>
-                    {stats.rankingGestores.length === 0 ? (
-                        <div className="text-center text-outline py-10">Sin registros.</div>
-                    ) : (
-                        <div className="space-y-6">
-                            {stats.rankingGestores.map((gestor: any, index: number) => (
-                                <div key={index} className="flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-on-surface-variant text-sm shrink-0">
+            {/* Top Gestores — fila completa con layout horizontal */}
+            <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
+                <div className="flex items-center gap-2 mb-6">
+                    <span className="material-symbols-outlined text-primary">emoji_events</span>
+                    <h3 className="font-h3">Top Gestores</h3>
+                </div>
+                {stats.rankingGestores.length === 0 ? (
+                    <div className="text-center text-outline py-6">Sin registros.</div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                        {stats.rankingGestores.map((gestor: any, index: number) => (
+                            <div key={index} className="flex flex-col gap-2 p-4 rounded-2xl bg-surface-container/50 border border-outline-variant hover:border-primary/40 hover:bg-primary/5 transition-all">
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${index === 0 ? 'bg-amber-400 text-white' : index === 1 ? 'bg-slate-400 text-white' : index === 2 ? 'bg-orange-400 text-white' : 'bg-surface-container-high text-on-surface-variant'}`}>
                                         {index + 1}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-on-surface truncate" title={gestor.nombre}>{gestor.nombre}</p>
-                                        <p className="text-xs text-on-surface-variant">{gestor.cantidad_visitas} visitas</p>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <p className="font-black text-primary">{gestor.total_personas}</p>
-                                        <p className="text-[10px] uppercase text-outline">Personas</p>
+                                    <p className="font-bold text-on-surface text-sm leading-tight" title={gestor.nombre}>{gestor.nombre}</p>
+                                </div>
+                                <div className="flex items-end justify-between mt-1">
+                                    <span className="text-xs text-on-surface-variant">{gestor.cantidad_visitas} visitas</span>
+                                    <div className="text-right">
+                                        <span className="font-black text-primary text-lg leading-none">{gestor.total_personas}</span>
+                                        <span className="text-[9px] uppercase text-outline block">personas</span>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Distribución de Grupos */}
@@ -200,6 +191,182 @@ const StatsBlocks = ({ stats, etiquetaPeriodo }: { stats: any; etiquetaPeriodo: 
                                             </div>
                                             <div className="text-right shrink-0">
                                                 <span className="font-black text-on-surface text-sm">{nivel.total_personas}</span>
+                                                <span className="text-[10px] text-outline ml-1">pers.</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+                </div>
+            </div>
+
+            {/* ── Provincias + Origen ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Provincias de Argentina */}
+                <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className="material-symbols-outlined text-primary">map</span>
+                        <h3 className="font-h3">Provincias de Argentina</h3>
+                    </div>
+                    {!stats.desglosePorProvincia || stats.desglosePorProvincia.length === 0 ? (
+                        <div className="text-center text-outline py-10">Sin datos de provincia en este período.</div>
+                    ) : (() => {
+                        const maxProv = Math.max(...stats.desglosePorProvincia.map((p: any) => parseInt(p.total_personas)));
+                        return (
+                            <div className="space-y-4">
+                                {stats.desglosePorProvincia.map((prov: any, i: number) => {
+                                    const pct = maxProv > 0 ? Math.round((parseInt(prov.total_personas) / maxProv) * 100) : 0;
+                                    return (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <div className="w-28 text-xs font-semibold text-on-surface-variant text-right shrink-0 truncate" title={prov.provincia}>
+                                                {prov.provincia}
+                                            </div>
+                                            <div className="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+                                                <div className={`h-full ${paleta[i % paleta.length]} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="font-black text-on-surface text-sm">{prov.total_personas}</span>
+                                                <span className="text-[10px] text-outline ml-1">pers.</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+                </div>
+
+                {/* Gráfico de Torta: Origen (Argentina vs Extranjeros) */}
+                <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className="material-symbols-outlined text-primary">public</span>
+                        <h3 className="font-h3">Origen de Visitantes</h3>
+                    </div>
+                    {!stats.origenVisitantes || stats.origenVisitantes.length === 0 ? (
+                        <div className="text-center text-outline py-10">Sin datos de origen en este período.</div>
+                    ) : (() => {
+                        const totalOrigen = stats.origenVisitantes.reduce((acc: number, o: any) => acc + parseInt(o.total_personas), 0);
+                        const coloresOrigen: Record<string, { bg: string; text: string; ring: string }> = {
+                            'Argentina':    { bg: '#3B82F6', text: 'text-blue-500',   ring: 'bg-blue-500' },
+                            'Extranjeros':  { bg: '#F59E0B', text: 'text-amber-500',  ring: 'bg-amber-500' },
+                        };
+                        // Calcular segmentos para SVG donut
+                        let acum = 0;
+                        const radio = 60, cx = 80, cy = 80, grosor = 28;
+                        const circunferencia = 2 * Math.PI * radio;
+                        const segmentos = stats.origenVisitantes.map((o: any, i: number) => {
+                            const pct = totalOrigen > 0 ? parseInt(o.total_personas) / totalOrigen : 0;
+                            const offset = circunferencia * (1 - acum);
+                            const dash = circunferencia * pct;
+                            acum += pct;
+                            const coloresArr = ['#3B82F6', '#F59E0B', '#10B981', '#EF4444'];
+                            return { ...o, pct, offset, dash, color: coloresArr[i % coloresArr.length] };
+                        });
+                        return (
+                            <div className="flex flex-col items-center gap-6">
+                                <div className="relative">
+                                    <svg width="160" height="160" viewBox="0 0 160 160">
+                                        {segmentos.map((seg: any, i: number) => (
+                                            <circle
+                                                key={i}
+                                                cx={cx} cy={cy} r={radio}
+                                                fill="none"
+                                                stroke={seg.color}
+                                                strokeWidth={grosor}
+                                                strokeDasharray={`${seg.dash} ${circunferencia - seg.dash}`}
+                                                strokeDashoffset={seg.offset}
+                                                strokeLinecap="butt"
+                                                style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                                                transform={`rotate(-90 ${cx} ${cy})`}
+                                            />
+                                        ))}
+                                        <text x={cx} y={cy - 8} textAnchor="middle" className="fill-on-surface" style={{ fontSize: 20, fontWeight: 900, fill: '#1c1b1f' }}>
+                                            {totalOrigen}
+                                        </text>
+                                        <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: 9, fill: '#6b7280' }}>personas</text>
+                                    </svg>
+                                </div>
+                                <div className="w-full space-y-3">
+                                    {segmentos.map((seg: any, i: number) => (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                                            <span className="flex-1 text-sm font-semibold text-on-surface">{seg.origen}</span>
+                                            <span className="font-black text-sm" style={{ color: seg.color }}>{Math.round(seg.pct * 100)}%</span>
+                                            <span className="text-xs text-outline">({seg.total_personas} pers. · {seg.cantidad_visitas} visitas)</span>
+                                        </div>
+                                    ))}
+                                    <p className="text-xs text-outline text-right pt-2 border-t border-outline-variant">
+                                        Total: <span className="font-bold text-on-surface">{totalOrigen} personas</span>
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </div>
+            </div>
+
+            {/* ── Localidades ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Localidades de Entre Ríos */}
+                <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className="material-symbols-outlined text-primary">location_on</span>
+                        <h3 className="font-h3">Localidades — Entre Ríos</h3>
+                    </div>
+                    {!stats.localidadesEntreRios || stats.localidadesEntreRios.length === 0 ? (
+                        <div className="text-center text-outline py-10">Sin datos de localidades de Entre Ríos en este período.</div>
+                    ) : (() => {
+                        const maxER = Math.max(...stats.localidadesEntreRios.map((l: any) => parseInt(l.total_personas)));
+                        return (
+                            <div className="space-y-4">
+                                {stats.localidadesEntreRios.map((loc: any, i: number) => {
+                                    const pct = maxER > 0 ? Math.round((parseInt(loc.total_personas) / maxER) * 100) : 0;
+                                    return (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <div className="w-28 text-xs font-semibold text-on-surface-variant text-right shrink-0 truncate" title={loc.localidad}>
+                                                {loc.localidad}
+                                            </div>
+                                            <div className="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+                                                <div className={`h-full ${paleta[i % paleta.length]} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="font-black text-on-surface text-sm">{loc.total_personas}</span>
+                                                <span className="text-[10px] text-outline ml-1">pers.</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+                </div>
+
+                {/* Localidades de Santa Fe */}
+                <div className="bg-white p-8 rounded-3xl border border-outline-variant shadow-sm">
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className="material-symbols-outlined text-primary">location_on</span>
+                        <h3 className="font-h3">Localidades — Santa Fe</h3>
+                    </div>
+                    {!stats.localidadesSantaFe || stats.localidadesSantaFe.length === 0 ? (
+                        <div className="text-center text-outline py-10">Sin datos de localidades de Santa Fe en este período.</div>
+                    ) : (() => {
+                        const maxSF = Math.max(...stats.localidadesSantaFe.map((l: any) => parseInt(l.total_personas)));
+                        return (
+                            <div className="space-y-4">
+                                {stats.localidadesSantaFe.map((loc: any, i: number) => {
+                                    const pct = maxSF > 0 ? Math.round((parseInt(loc.total_personas) / maxSF) * 100) : 0;
+                                    return (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <div className="w-28 text-xs font-semibold text-on-surface-variant text-right shrink-0 truncate" title={loc.localidad}>
+                                                {loc.localidad}
+                                            </div>
+                                            <div className="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+                                                <div className={`h-full ${paleta[i % paleta.length]} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="font-black text-on-surface text-sm">{loc.total_personas}</span>
                                                 <span className="text-[10px] text-outline ml-1">pers.</span>
                                             </div>
                                         </div>
