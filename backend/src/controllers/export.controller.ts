@@ -64,5 +64,25 @@ export const ExportController = {
             console.error("Error al exportar PDF por rango:", error);
             res.status(500).json({ error: 'No se pudo generar el reporte por rango de fechas' });
         }
+    },
+
+    async exportarComprobanteVisita(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                return res.status(400).json({ error: 'El ID de la visita es requerido' });
+            }
+
+            const pdfBuffer = await ExportService.generarComprobanteVisitaPDF(id as string);
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=Comprobante_Visita_${id}.pdf`);
+            res.setHeader('Content-Length', pdfBuffer.length);
+
+            res.end(pdfBuffer);
+        } catch (error) {
+            console.error("Error al exportar comprobante de visita:", error);
+            res.status(500).json({ error: 'No se pudo generar el comprobante de visita' });
+        }
     }
 };

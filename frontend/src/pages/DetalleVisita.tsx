@@ -98,6 +98,32 @@ export const DetalleVisita = () => {
         }
     };
 
+    const [imprimiendo, setImprimiendo] = useState(false);
+
+    const handleReimprimir = async () => {
+        setImprimiendo(true);
+        try {
+            const res = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/estadisticas/exportar/visita/${id}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            if (!res.ok) throw new Error('Error al generar el comprobante PDF');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Comprobante_Visita_${id}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error al reimprimir comprobante:', err);
+            alert('No se pudo generar el comprobante de visita.');
+        } finally {
+            setImprimiendo(false);
+        }
+    };
+
+
     if (loading) return <div className="p-8 text-center text-on-surface-variant animate-pulse">Cargando detalles...</div>;
     if (error || !visita) return <div className="p-8 text-center text-error">{error || 'Visita no encontrada'}</div>;
 
@@ -277,6 +303,16 @@ export const DetalleVisita = () => {
 
                 {/* ── Botones de acción ── */}
                 <div className="md:col-span-2 flex justify-end gap-4 pt-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleReimprimir}
+                        disabled={imprimiendo}
+                    >
+                        <span className={`material-symbols-outlined mr-1 ${imprimiendo ? 'animate-spin' : ''}`}>
+                            {imprimiendo ? 'progress_activity' : 'print'}
+                        </span>
+                        {imprimiendo ? 'Generando...' : 'Reimprimir Comprobante'}
+                    </Button>
                     <Button variant="outline" onClick={() => navigate(`/visitas/editar/${visita.id}`)}>
                         <span className="material-symbols-outlined">edit</span> Editar Visita
                     </Button>

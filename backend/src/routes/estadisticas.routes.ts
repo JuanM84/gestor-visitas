@@ -9,5 +9,6 @@ router.get('/rango', verificarToken, EstadisticasController.getStatsByRango);
 router.get('/exportar', verificarToken, ExportController.exportarMensual);
 router.get('/exportar/diario', verificarToken, ExportController.exportarDiario);
 router.get('/exportar/rango', verificarToken, ExportController.exportarRango);
+router.get('/exportar/visita/:id', verificarToken, ExportController.exportarComprobanteVisita);
 
 export default router;

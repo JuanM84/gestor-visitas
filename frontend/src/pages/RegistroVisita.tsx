@@ -206,6 +206,28 @@ export const RegistroVisita = () => {
                 body: JSON.stringify(payloadPendiente)
             });
             if (res.ok) {
+                const data = await res.json();
+                const visitaId = data.visita_id;
+
+                // Generar y descargar el comprobante en PDF
+                try {
+                    const resPdf = await fetch(
+                        `${import.meta.env.VITE_API_URL}/api/estadisticas/exportar/visita/${visitaId}`,
+                        { headers: { 'Authorization': `Bearer ${token}` } }
+                    );
+                    if (resPdf.ok) {
+                        const blob = await resPdf.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `Comprobante_Visita_${visitaId}.pdf`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+                } catch (errPdf) {
+                    console.error('Error al descargar el comprobante PDF:', errPdf);
+                }
+
                 navigate(`/dashboard?fecha=${visita.fecha}`);
             } else {
                 const data = await res.json();
