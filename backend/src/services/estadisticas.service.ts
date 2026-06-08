@@ -70,20 +70,20 @@ export const EstadisticasService = {
         `;
         const desglosePorNivelResult = await pool.query(desglosePorNivelQuery, [mes, anio]);
 
-        // Desglose por provincia argentina
         const desglosePorProvinciaQuery = `
             SELECT
-                COALESCE(NULLIF(TRIM(gr.provincia), ''), 'Sin especificar') AS provincia,
+                COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar') AS provincia,
                 COUNT(v.id)              AS cantidad_visitas,
                 SUM(v.cantidad_personas) AS total_personas
             FROM Visita v
             JOIN Grupo gr ON v.grupo_id = gr.id
+            LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
             WHERE EXTRACT(MONTH FROM v.fecha) = $1
               AND EXTRACT(YEAR FROM v.fecha) = $2
               AND v.estado != 'Cancelada'
-              AND UPPER(TRIM(COALESCE(gr.pais, ''))) IN ('ARGENTINA', '')
-              AND gr.provincia IS NOT NULL AND TRIM(gr.provincia) != ''
-            GROUP BY provincia
+              AND UPPER(TRIM(COALESCE(inst.pais, gr.pais, ''))) IN ('ARGENTINA', '')
+              AND COALESCE(inst.provincia, gr.provincia) IS NOT NULL AND TRIM(COALESCE(inst.provincia, gr.provincia)) != ''
+            GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar')
             ORDER BY total_personas DESC
             LIMIT 15
         `;
@@ -92,17 +92,18 @@ export const EstadisticasService = {
         // Localidades de Entre Ríos
         const localidadesEntreRiosQuery = `
             SELECT
-                COALESCE(NULLIF(TRIM(gr.localidad), ''), 'Sin especificar') AS localidad,
+                COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS localidad,
                 COUNT(v.id)              AS cantidad_visitas,
                 SUM(v.cantidad_personas) AS total_personas
             FROM Visita v
             JOIN Grupo gr ON v.grupo_id = gr.id
+            LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
             WHERE EXTRACT(MONTH FROM v.fecha) = $1
               AND EXTRACT(YEAR FROM v.fecha) = $2
               AND v.estado != 'Cancelada'
-              AND LOWER(TRIM(COALESCE(gr.provincia, ''))) ILIKE '%entre r%'
-              AND gr.localidad IS NOT NULL AND TRIM(gr.localidad) != ''
-            GROUP BY localidad
+              AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%entre r%'
+              AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
+            GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
             ORDER BY total_personas DESC
             LIMIT 20
         `;
@@ -111,17 +112,18 @@ export const EstadisticasService = {
         // Localidades de Santa Fe
         const localidadesSantaFeQuery = `
             SELECT
-                COALESCE(NULLIF(TRIM(gr.localidad), ''), 'Sin especificar') AS localidad,
+                COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS localidad,
                 COUNT(v.id)              AS cantidad_visitas,
                 SUM(v.cantidad_personas) AS total_personas
             FROM Visita v
             JOIN Grupo gr ON v.grupo_id = gr.id
+            LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
             WHERE EXTRACT(MONTH FROM v.fecha) = $1
               AND EXTRACT(YEAR FROM v.fecha) = $2
               AND v.estado != 'Cancelada'
-              AND LOWER(TRIM(COALESCE(gr.provincia, ''))) ILIKE '%santa fe%'
-              AND gr.localidad IS NOT NULL AND TRIM(gr.localidad) != ''
-            GROUP BY localidad
+              AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%santa fe%'
+              AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
+            GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
             ORDER BY total_personas DESC
             LIMIT 20
         `;
@@ -131,7 +133,7 @@ export const EstadisticasService = {
         const origenQuery = `
             SELECT
                 CASE
-                    WHEN UPPER(TRIM(COALESCE(gr.pais, 'ARGENTINA'))) = 'ARGENTINA' OR TRIM(COALESCE(gr.pais, '')) = ''
+                    WHEN UPPER(TRIM(COALESCE(inst.pais, gr.pais, 'ARGENTINA'))) = 'ARGENTINA' OR TRIM(COALESCE(inst.pais, gr.pais, '')) = ''
                     THEN 'Argentina'
                     ELSE 'Extranjeros'
                 END AS origen,
@@ -139,10 +141,15 @@ export const EstadisticasService = {
                 SUM(v.cantidad_personas) AS total_personas
             FROM Visita v
             JOIN Grupo gr ON v.grupo_id = gr.id
+            LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
             WHERE EXTRACT(MONTH FROM v.fecha) = $1
               AND EXTRACT(YEAR FROM v.fecha) = $2
               AND v.estado != 'Cancelada'
-            GROUP BY origen
+            GROUP BY CASE
+                    WHEN UPPER(TRIM(COALESCE(inst.pais, gr.pais, 'ARGENTINA'))) = 'ARGENTINA' OR TRIM(COALESCE(inst.pais, gr.pais, '')) = ''
+                    THEN 'Argentina'
+                    ELSE 'Extranjeros'
+                END
             ORDER BY total_personas DESC
         `;
         const origenResult = await pool.query(origenQuery, [mes, anio]);
@@ -233,16 +240,17 @@ export const EstadisticasService = {
         // Desglose por provincia argentina
         const desglosePorProvinciaQuery = `
             SELECT
-                COALESCE(NULLIF(TRIM(gr.provincia), ''), 'Sin especificar') AS provincia,
+                COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar') AS provincia,
                 COUNT(v.id)              AS cantidad_visitas,
                 SUM(v.cantidad_personas) AS total_personas
             FROM Visita v
             JOIN Grupo gr ON v.grupo_id = gr.id
+            LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
             WHERE v.fecha BETWEEN $1 AND $2
               AND v.estado != 'Cancelada'
-              AND UPPER(TRIM(COALESCE(gr.pais, ''))) IN ('ARGENTINA', '')
-              AND gr.provincia IS NOT NULL AND TRIM(gr.provincia) != ''
-            GROUP BY provincia
+              AND UPPER(TRIM(COALESCE(inst.pais, gr.pais, ''))) IN ('ARGENTINA', '')
+              AND COALESCE(inst.provincia, gr.provincia) IS NOT NULL AND TRIM(COALESCE(inst.provincia, gr.provincia)) != ''
+            GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar')
             ORDER BY total_personas DESC
             LIMIT 15
         `;
@@ -251,16 +259,17 @@ export const EstadisticasService = {
         // Localidades de Entre Ríos
         const localidadesEntreRiosQuery = `
             SELECT
-                COALESCE(NULLIF(TRIM(gr.localidad), ''), 'Sin especificar') AS localidad,
+                COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS localidad,
                 COUNT(v.id)              AS cantidad_visitas,
                 SUM(v.cantidad_personas) AS total_personas
             FROM Visita v
             JOIN Grupo gr ON v.grupo_id = gr.id
+            LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
             WHERE v.fecha BETWEEN $1 AND $2
               AND v.estado != 'Cancelada'
-              AND LOWER(TRIM(COALESCE(gr.provincia, ''))) ILIKE '%entre r%'
-              AND gr.localidad IS NOT NULL AND TRIM(gr.localidad) != ''
-            GROUP BY localidad
+              AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%entre r%'
+              AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
+            GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
             ORDER BY total_personas DESC
             LIMIT 20
         `;
@@ -269,16 +278,17 @@ export const EstadisticasService = {
         // Localidades de Santa Fe
         const localidadesSantaFeQuery = `
             SELECT
-                COALESCE(NULLIF(TRIM(gr.localidad), ''), 'Sin especificar') AS localidad,
+                COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS localidad,
                 COUNT(v.id)              AS cantidad_visitas,
                 SUM(v.cantidad_personas) AS total_personas
             FROM Visita v
             JOIN Grupo gr ON v.grupo_id = gr.id
+            LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
             WHERE v.fecha BETWEEN $1 AND $2
               AND v.estado != 'Cancelada'
-              AND LOWER(TRIM(COALESCE(gr.provincia, ''))) ILIKE '%santa fe%'
-              AND gr.localidad IS NOT NULL AND TRIM(gr.localidad) != ''
-            GROUP BY localidad
+              AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%santa fe%'
+              AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
+            GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
             ORDER BY total_personas DESC
             LIMIT 20
         `;
@@ -288,7 +298,7 @@ export const EstadisticasService = {
         const origenQuery = `
             SELECT
                 CASE
-                    WHEN UPPER(TRIM(COALESCE(gr.pais, 'ARGENTINA'))) = 'ARGENTINA' OR TRIM(COALESCE(gr.pais, '')) = ''
+                    WHEN UPPER(TRIM(COALESCE(inst.pais, gr.pais, 'ARGENTINA'))) = 'ARGENTINA' OR TRIM(COALESCE(inst.pais, gr.pais, '')) = ''
                     THEN 'Argentina'
                     ELSE 'Extranjeros'
                 END AS origen,
@@ -296,9 +306,14 @@ export const EstadisticasService = {
                 SUM(v.cantidad_personas) AS total_personas
             FROM Visita v
             JOIN Grupo gr ON v.grupo_id = gr.id
+            LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
             WHERE v.fecha BETWEEN $1 AND $2
               AND v.estado != 'Cancelada'
-            GROUP BY origen
+            GROUP BY CASE
+                    WHEN UPPER(TRIM(COALESCE(inst.pais, gr.pais, 'ARGENTINA'))) = 'ARGENTINA' OR TRIM(COALESCE(inst.pais, gr.pais, '')) = ''
+                    THEN 'Argentina'
+                    ELSE 'Extranjeros'
+                END
             ORDER BY total_personas DESC
         `;
         const origenResult = await pool.query(origenQuery, [fechaDesde, fechaHasta]);
