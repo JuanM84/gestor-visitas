@@ -220,7 +220,13 @@ export const RegistroVisita = () => {
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = `Comprobante_Visita_${visitaId}.pdf`;
+
+                        // Formatear fecha para el nombre del archivo (formato DD-MM-AAAA)
+                        const dateStr = visita.fecha.includes('T') ? visita.fecha.split('T')[0] : visita.fecha;
+                        const parts = dateStr.split('-');
+                        const fechaStr = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr;
+
+                        a.download = `Comprobante_visita_${fechaStr}.pdf`;
                         a.click();
                         URL.revokeObjectURL(url);
                     }

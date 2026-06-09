@@ -9,7 +9,8 @@ const navItems = [
     { name: 'Calendario', icon: 'calendar_today', path: '/calendario' },
     { name: 'Auditoria', icon: 'confirmation_number', path: '/auditoria', roles: ['Admin'] },
     { name: 'Gestores', icon: 'groups', path: '/gestores' },
-    { name: 'Reportes', icon: 'analytics', path: '/reportes' },
+    { name: 'Listado', icon: 'print', path: '/listado' },
+    { name: 'Estadísticas', icon: 'analytics', path: '/estadisticas' },
     { name: 'Usuarios', icon: 'manage_accounts', path: '/usuarios', roles: ['Admin'] },
     { name: 'Configuraciones', icon: 'settings', path: '/configuraciones', roles: ['Admin'] },
 ];

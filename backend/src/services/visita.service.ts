@@ -98,6 +98,13 @@ export const VisitaService = {
         return await VisitaRepository.findVisitasByFecha(fecha);
     },
 
+    async obtenerVisitasRango(desde: string, hasta: string) {
+        if (!desde.match(/^\d{4}-\d{2}-\d{2}$/) || !hasta.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            throw new Error('Formato de fecha inválido. Use YYYY-MM-DD');
+        }
+        return await VisitaRepository.findVisitasByRango(desde, hasta);
+    },
+
     async registrarNuevaVisita(datos: CrearVisitaDto, usuarioId: string) {
         // 1. Validar tipo de visita
         if (!datos.visita?.tipo || !esTipoVisitaValido(datos.visita.tipo)) {

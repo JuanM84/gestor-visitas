@@ -25,6 +25,24 @@ export const VisitaController = {
         }
     },
 
+    async getVisitasRango(req: Request, res: Response) {
+        try {
+            const desde = req.query.desde as string;
+            const hasta = req.query.hasta as string;
+
+            if (!desde || !hasta) {
+                return res.status(400).json({ error: 'Los parámetros desde y hasta son requeridos' });
+            }
+
+            const visitas = await VisitaService.obtenerVisitasRango(desde, hasta);
+
+            res.status(200).json(visitas);
+        } catch (error: any) {
+            console.error('Error en getVisitasRango:', error.message);
+            res.status(500).json({ error: error.message || 'Error interno del servidor' });
+        }
+    },
+
     async crearVisita(req: Request, res: Response) {
         try {
             const datosVisita = req.body;

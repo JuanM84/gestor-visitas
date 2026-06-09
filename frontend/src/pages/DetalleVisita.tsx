@@ -112,7 +112,13 @@ export const DetalleVisita = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Comprobante_Visita_${id}.pdf`;
+
+            // Formatear fecha para el nombre del archivo (formato DD-MM-AAAA)
+            const dateStr = visita?.fecha?.includes('T') ? visita.fecha.split('T')[0] : (visita?.fecha || '');
+            const parts = dateStr.split('-');
+            const fechaStr = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr;
+
+            a.download = `Comprobante_visita_${fechaStr}.pdf`;
             a.click();
             URL.revokeObjectURL(url);
         } catch (err) {
@@ -303,16 +309,18 @@ export const DetalleVisita = () => {
 
                 {/* ── Botones de acción ── */}
                 <div className="md:col-span-2 flex justify-end gap-4 pt-2">
-                    <Button
-                        variant="outline"
-                        onClick={handleReimprimir}
-                        disabled={imprimiendo}
-                    >
-                        <span className={`material-symbols-outlined mr-1 ${imprimiendo ? 'animate-spin' : ''}`}>
-                            {imprimiendo ? 'progress_activity' : 'print'}
-                        </span>
-                        {imprimiendo ? 'Generando...' : 'Reimprimir Comprobante'}
-                    </Button>
+                    {visita.estado !== 'Cancelada' && (
+                        <Button
+                            variant="outline"
+                            onClick={handleReimprimir}
+                            disabled={imprimiendo}
+                        >
+                            <span className={`material-symbols-outlined mr-1 ${imprimiendo ? 'animate-spin' : ''}`}>
+                                {imprimiendo ? 'progress_activity' : 'print'}
+                            </span>
+                            {imprimiendo ? 'Generando...' : 'Reimprimir Comprobante'}
+                        </Button>
+                    )}
                     <Button variant="outline" onClick={() => navigate(`/visitas/editar/${visita.id}`)}>
                         <span className="material-symbols-outlined">edit</span> Editar Visita
                     </Button>

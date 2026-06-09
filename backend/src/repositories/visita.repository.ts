@@ -156,5 +156,26 @@ async getById(id: string) {
       `UPDATE Grupo SET institucion_id = $1 WHERE id = (SELECT grupo_id FROM Visita WHERE id = $2)`,
       [institucionId, visitaId]
     );
+  },
+
+  async findVisitasByRango(desde: string, hasta: string) {
+    const query = `
+        SELECT 
+            v.*,
+            g.nombre  AS gestor_nombre,
+            gr.nombre AS grupo_nombre,
+            gr.tipo_visitante,
+            gr.tipo_grupo,
+            gr.nivel_educativo,
+            inst.nombre AS institucion_nombre
+        FROM Visita v
+        JOIN Gestor g  ON v.gestor_id  = g.id
+        JOIN Grupo  gr ON v.grupo_id   = gr.id
+        LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+        WHERE v.fecha BETWEEN $1 AND $2
+        ORDER BY v.fecha ASC, v.hora_inicio ASC
+    `;
+    const res = await pool.query(query, [desde, hasta]);
+    return res.rows;
   }
 };

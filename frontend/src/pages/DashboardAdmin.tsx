@@ -603,18 +603,10 @@ export const DashboardAdmin = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
-                    <h1 className="font-h1 text-h1 text-on-surface">Dashboard Gerencial</h1>
-                    <p className="font-body-md text-on-surface-variant">Indicadores clave de rendimiento (KPIs) y analíticas.</p>
+                    <h1 className="font-h1 text-h1 text-on-surface">Estadísticas</h1>
+                    <p className="font-body-md text-on-surface-variant">Indicadores clave de rendimiento (KPIs) y analíticas del sistema.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleExportar}
-                        className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all shadow-sm"
-                    >
-                        <span className="material-symbols-outlined text-[18px]">download</span>
-                        Exportar Mes
-                    </button>
-
                     <button
                         onClick={() => setModalRango(true)}
                         className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all shadow-sm"

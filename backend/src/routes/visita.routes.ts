@@ -7,6 +7,9 @@ const router = Router();
 // GET /api/visitas?fecha=YYYY-MM-DD
 router.get('/', verificarToken, VisitaController.getVisitasDashboard);
 
+// GET /api/visitas/rango?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
+router.get('/rango', verificarToken, VisitaController.getVisitasRango);
+
 // POST /api/visitas
 router.post('/', verificarToken, VisitaController.crearVisita);
 

@@ -13,6 +13,7 @@ import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Gestores } from './pages/Gestores';
 import { DashboardAdmin } from './pages/DashboardAdmin';
 import { Auditoria } from './pages/Auditoria';
+import { Listado } from './pages/Listado';
 
 function App() {
   return (
@@ -68,9 +69,14 @@ function App() {
             <MainLayout><Gestores /></MainLayout>
           </ProtectedRoute>
         } />
-        <Route path="/reportes" element={
+        <Route path="/estadisticas" element={
           <ProtectedRoute>
             <MainLayout><DashboardAdmin /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/listado" element={
+          <ProtectedRoute>
+            <MainLayout><Listado /></MainLayout>
           </ProtectedRoute>
         } />
         <Route path="/auditoria" element={
