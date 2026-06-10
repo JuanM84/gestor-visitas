@@ -12,7 +12,7 @@ export const GestorService = {
         return result.rows;
     },
 
-    async crearGestor(datos: any) {
+    async crearGestor(datos: any, usuarioId?: string) {
         // G-1: Validar nombre obligatorio
         if (!datos.nombre?.trim()) {
             throw new Error('El nombre del gestor es obligatorio');
@@ -38,22 +38,40 @@ export const GestorService = {
             );
         }
 
-        const query = `
-            INSERT INTO Gestor (nombre, tipo, empresa_institucion, telefono, email, localidad, provincia, pais) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-            RETURNING *
-        `;
-        const result = await pool.query(query, [
-            datos.nombre,
-            datos.tipo || 'Institución Educativa',
-            datos.empresa_institucion || null,
-            datos.telefono || null,
-            datos.email || null,
-            datos.localidad || null,
-            datos.provincia || null,
-            datos.pais || 'Argentina'
-        ]);
-        return result.rows[0];
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const query = `
+                INSERT INTO Gestor (nombre, tipo, empresa_institucion, telefono, email, localidad, provincia, pais) 
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+                RETURNING *
+            `;
+            const result = await client.query(query, [
+                datos.nombre,
+                datos.tipo || 'Institución Educativa',
+                datos.empresa_institucion || null,
+                datos.telefono || null,
+                datos.email || null,
+                datos.localidad || null,
+                datos.provincia || null,
+                datos.pais || 'Argentina'
+            ]);
+
+            if (usuarioId) {
+                await client.query(
+                    `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                    [usuarioId, `Registró nuevo gestor "${datos.nombre}"`]
+                );
+            }
+
+            await client.query('COMMIT');
+            return result.rows[0];
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     },
 
     async actualizarGestor(id: string, datos: any) {

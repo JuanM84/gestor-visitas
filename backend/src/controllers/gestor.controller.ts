@@ -33,7 +33,8 @@ export const GestorController = {
                 });
             }
             
-            const nuevoGestor = await GestorService.crearGestor(req.body);
+            const usuarioId = (req as any).usuario?.id;
+            const nuevoGestor = await GestorService.crearGestor(req.body, usuarioId);
             res.status(201).json({ mensaje: 'Gestor creado exitosamente', gestor: nuevoGestor });
         } catch (error: any) {
             res.status(400).json({ error: error?.message || 'Error al guardar el gestor' });

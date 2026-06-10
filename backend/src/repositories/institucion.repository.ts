@@ -16,13 +16,14 @@ export const InstitucionRepository = {
         return result.rows[0];
     },
 
-    async create(datos: any) {
+    async create(datos: any, client?: any) {
         const query = `
             INSERT INTO Institucion (nombre, telefono, email, localidad, provincia, pais)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         `;
-        const result = await pool.query(query, [
+        const executor = client || pool;
+        const result = await executor.query(query, [
             datos.nombre,
             datos.telefono || null,
             datos.email || null,

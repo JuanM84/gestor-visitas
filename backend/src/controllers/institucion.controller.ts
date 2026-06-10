@@ -14,7 +14,8 @@ export const InstitucionController = {
 
     async createInstitucion(req: Request, res: Response) {
         try {
-            const nueva = await InstitucionService.crearInstitucion(req.body);
+            const usuarioId = (req as any).usuario?.id;
+            const nueva = await InstitucionService.crearInstitucion(req.body, usuarioId);
             res.status(201).json({ mensaje: 'Institución creada exitosamente', institucion: nueva });
         } catch (error: any) {
             res.status(400).json({ error: error.message });

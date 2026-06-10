@@ -12,7 +12,7 @@ export const InstitucionService = {
         return inst;
     },
 
-    async crearInstitucion(datos: any) {
+    async crearInstitucion(datos: any, usuarioId?: string) {
         if (!datos.nombre?.trim()) {
             throw new Error('El nombre de la institución es obligatorio');
         }
@@ -36,6 +36,25 @@ export const InstitucionService = {
             throw new Error(`Ya existe la institución "${nombre}" registrada en ${ubicacionInfo || 'la misma ubicación'}.`);
         }
 
-        return await InstitucionRepository.create(datos);
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const nueva = await InstitucionRepository.create(datos, client);
+
+            if (usuarioId) {
+                await client.query(
+                    `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                    [usuarioId, `Registró nueva institución "${nombre}"`]
+                );
+            }
+
+            await client.query('COMMIT');
+            return nueva;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 };

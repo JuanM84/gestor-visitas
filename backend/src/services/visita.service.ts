@@ -188,6 +188,10 @@ export const VisitaService = {
                     ]
                 );
                 gestorId = resGestor.rows[0].id;
+                await client.query(
+                    `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                    [usuarioId, `Registró nuevo gestor "${ng.nombre}" (creado durante el registro de visita)`]
+                );
             }
             if (!gestorId) throw new Error('Debe seleccionar o crear un gestor');
 
@@ -207,6 +211,10 @@ export const VisitaService = {
                     );
                     institucionId = resInst.rows[0].id;
                     nombreInstitucionResuelta = resInst.rows[0].nombre;
+                    await client.query(
+                        `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                        [usuarioId, `Registró nueva institución "${ni.nombre}" (creada durante el registro de visita)`]
+                    );
                 } else if (g.institucion_id) {
                     // Obtener nombre de institución existente
                     const resInst = await client.query('SELECT nombre FROM Institucion WHERE id = $1', [g.institucion_id]);
@@ -415,6 +423,10 @@ export const VisitaService = {
                 );
                 gestorIdFinal = resGestor.rows[0].id;
                 cambios.push(`gestor a nuevo "${resGestor.rows[0].nombre}"`);
+                await client.query(
+                    `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                    [usuarioId, `Registró nuevo gestor "${ng.nombre.trim()}" (creado durante la edición de visita)`]
+                );
             }
 
             if (gestorIdFinal) {
@@ -455,6 +467,10 @@ export const VisitaService = {
                         [resInst.rows[0].nombre, id]
                     );
                     cambios.push(`institución a nueva "${resInst.rows[0].nombre}"`);
+                    await client.query(
+                        `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                        [usuarioId, `Registró nueva institución "${ni.nombre.trim()}" (creada durante la edición de visita)`]
+                    );
                 }
             }
 
