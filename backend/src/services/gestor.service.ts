@@ -126,5 +126,28 @@ export const GestorService = {
         `;
         const resultUpdate = await pool.query(queryUpdate, valores);
         return resultUpdate.rows[0];
+    },
+
+    async eliminarGestor(id: string) {
+        // 1. Validar si el gestor existe
+        const existe = await pool.query('SELECT id FROM Gestor WHERE id = $1', [id]);
+        if (existe.rows.length === 0) {
+            throw new Error('El gestor no existe');
+        }
+
+        // 2. Verificar referencias en Visita
+        const visitasRef = await pool.query('SELECT COUNT(*) FROM Visita WHERE gestor_id = $1', [id]);
+        if (parseInt(visitasRef.rows[0].count, 10) > 0) {
+            throw new Error('No se puede eliminar el gestor porque tiene visitas asociadas.');
+        }
+
+        // 3. Verificar referencias en Grupo
+        const gruposRef = await pool.query('SELECT COUNT(*) FROM Grupo WHERE gestor_id = $1', [id]);
+        if (parseInt(gruposRef.rows[0].count, 10) > 0) {
+            throw new Error('No se puede eliminar el gestor porque tiene grupos asociados.');
+        }
+
+        // 4. Eliminar
+        await pool.query('DELETE FROM Gestor WHERE id = $1', [id]);
     }
 };

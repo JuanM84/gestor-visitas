@@ -64,5 +64,18 @@ export const GestorController = {
         } catch (error: any) {
             res.status(400).json({ error: error?.message || 'Error al actualizar el gestor' });
         }
+    },
+
+    async deleteGestor(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                return res.status(400).json({ error: 'El ID del gestor es obligatorio' });
+            }
+            await GestorService.eliminarGestor(id as string);
+            res.status(200).json({ mensaje: 'Gestor eliminado exitosamente' });
+        } catch (error: any) {
+            res.status(400).json({ error: error?.message || 'Error al eliminar el gestor' });
+        }
     }
 };

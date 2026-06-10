@@ -9,6 +9,8 @@ export const Gestores = () => {
     const [loading, setLoading] = useState(true);
     const [errorLista, setErrorLista] = useState<string | null>(null);
     const [gestorSeleccionado, setGestorSeleccionado] = useState<any | null>(null);
+    const [filtroNombre, setFiltroNombre] = useState('');
+    const [eliminandoId, setEliminandoId] = useState<string | null>(null);
 
     // Estado para el formulario
     const [formData, setFormData] = useState({
@@ -28,7 +30,8 @@ export const Gestores = () => {
     const [guardandoEdit, setGuardandoEdit] = useState(false);
     const [mensajeFormEdit, setMensajeFormEdit] = useState({ tipo: '', texto: '' });
 
-    const { token } = useAuth();
+    const { token, usuario } = useAuth();
+    const esAdmin = usuario?.rol?.toLowerCase() === 'admin';
     const inputStyles = "w-full h-11 px-4 rounded-lg border border-outline-variant bg-surface-bright text-on-background focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all";
 
     const fetchGestores = async () => {
@@ -110,6 +113,35 @@ export const Gestores = () => {
             setGuardandoEdit(false);
         }
     };
+
+    const handleEliminarGestor = async (id: string, nombre: string) => {
+        if (!confirm(`¿Está seguro de que desea eliminar al gestor "${nombre}"?`)) {
+            return;
+        }
+
+        try {
+            setEliminandoId(id);
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gestores/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al eliminar el gestor');
+
+            fetchGestores();
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setEliminandoId(null);
+        }
+    };
+
+    const gestoresFiltrados = gestores.filter(gestor =>
+        gestor.nombre.toLowerCase().includes(filtroNombre.toLowerCase())
+    );
 
     return (
         <div className="flex flex-col max-w-[1200px] w-full mx-auto">
@@ -346,9 +378,30 @@ export const Gestores = () => {
 
                 {/* COLUMNA DERECHA: Tabla Directorio */}
                 <div className="lg:col-span-2 bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant">
-                    <div className="flex items-center gap-2 mb-6 text-primary">
-                        <span className="material-symbols-outlined">contact_page</span>
-                        <h2 className="font-h3 text-h3">Gestores Registrados</h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div className="flex items-center gap-2 text-primary">
+                            <span className="material-symbols-outlined">contact_page</span>
+                            <h2 className="font-h3 text-h3">Gestores Registrados</h2>
+                        </div>
+                        {/* Buscador de Gestores */}
+                        <div className="relative w-full sm:w-64">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">search</span>
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre..."
+                                value={filtroNombre}
+                                onChange={(e) => setFiltroNombre(e.target.value)}
+                                className="w-full h-10 pl-10 pr-8 rounded-xl border border-outline-variant bg-surface-bright text-on-background text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                            />
+                            {filtroNombre && (
+                                <button
+                                    onClick={() => setFiltroNombre('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-background transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">close</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <div className="rounded-xl border border-surface-container-highest overflow-hidden">
@@ -369,8 +422,10 @@ export const Gestores = () => {
                                     <tr><td colSpan={5} className="p-8 text-center text-error">{errorLista}</td></tr>
                                 ) : gestores.length === 0 ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">No hay gestores registrados en el sistema.</td></tr>
+                                ) : gestoresFiltrados.length === 0 ? (
+                                    <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">No se encontraron gestores que coincidan con la búsqueda.</td></tr>
                                 ) : (
-                                    gestores.map((gestor) => (
+                                    gestoresFiltrados.map((gestor) => (
                                         <tr key={gestor.id} className="hover:bg-surface-bright transition-colors">
                                             <td className="p-4">
                                                 <div className="font-semibold text-on-surface">{gestor.nombre}</div>
@@ -411,6 +466,16 @@ export const Gestores = () => {
                                                     >
                                                         <span className="material-symbols-outlined text-[20px]">edit</span>
                                                     </button>
+                                                    {esAdmin && (
+                                                        <button
+                                                            onClick={() => handleEliminarGestor(gestor.id, gestor.nombre)}
+                                                            title="Eliminar gestor"
+                                                            disabled={eliminandoId === gestor.id}
+                                                            className="p-2 hover:bg-error-container rounded-full text-error transition-colors disabled:opacity-50"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
