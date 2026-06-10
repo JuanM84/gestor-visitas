@@ -13,7 +13,8 @@ export const UsuarioController = {
 
     async crearUsuario(req: Request, res: Response) {
         try {
-            const nuevoUsuario = await UsuarioService.crearUsuario(req.body);
+            const usuarioId = (req as any).usuario?.id;
+            const nuevoUsuario = await UsuarioService.crearUsuario(req.body, usuarioId);
             res.status(201).json({ mensaje: 'Usuario creado exitosamente', usuario: nuevoUsuario });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -31,7 +32,7 @@ export const UsuarioController = {
                 return res.status(400).json({ error: 'No podés desactivar tu propia cuenta mientras tenés la sesión activa.' });
             }
 
-            const usuario = await UsuarioService.desactivarUsuario(String(id));
+            const usuario = await UsuarioService.desactivarUsuario(String(id), usuarioSolicitante.id);
             res.status(200).json({ mensaje: `Usuario "${usuario.nombre}" desactivado correctamente`, usuario });
         } catch (error: any) {
             const status = error.message.includes('no encontrado') ? 404 : 400;
@@ -43,7 +44,8 @@ export const UsuarioController = {
     async reactivarUsuario(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const usuario = await UsuarioService.reactivarUsuario(String(id));
+            const usuarioSolicitante = (req as any).usuario;
+            const usuario = await UsuarioService.reactivarUsuario(String(id), usuarioSolicitante.id);
             res.status(200).json({ mensaje: `Usuario "${usuario.nombre}" reactivado correctamente`, usuario });
         } catch (error: any) {
             const status = error.message.includes('no encontrado') ? 404 : 400;
@@ -56,7 +58,8 @@ export const UsuarioController = {
         try {
             const { id } = req.params;
             const { nombre, email, telefono, rol } = req.body;
-            const usuario = await UsuarioService.actualizarDatos(String(id), { nombre, email, telefono, rol });
+            const usuarioSolicitante = (req as any).usuario;
+            const usuario = await UsuarioService.actualizarDatos(String(id), { nombre, email, telefono, rol }, usuarioSolicitante.id);
             res.status(200).json({ mensaje: 'Usuario actualizado correctamente.', usuario });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -79,7 +82,7 @@ export const UsuarioController = {
                 return res.status(400).json({ error: 'La contraseña actual y la nueva contraseña son obligatorias.' });
             }
 
-            await UsuarioService.cambiarPassword(String(id), passwordActual, nuevaPassword);
+            await UsuarioService.cambiarPassword(String(id), passwordActual, nuevaPassword, usuarioSolicitante.id);
             res.status(200).json({ mensaje: 'Contraseña actualizada correctamente.' });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -110,7 +113,7 @@ export const UsuarioController = {
                 return res.status(403).json({ error: 'Solo podés editar tu propio perfil.' });
             }
             const { email, telefono } = req.body;
-            const usuario = await UsuarioService.actualizarPerfil(String(id), { email, telefono });
+            const usuario = await UsuarioService.actualizarPerfil(String(id), { email, telefono }, usuarioSolicitante.id);
             res.status(200).json({ mensaje: 'Perfil actualizado correctamente.', usuario });
         } catch (error: any) {
             res.status(400).json({ error: error.message });

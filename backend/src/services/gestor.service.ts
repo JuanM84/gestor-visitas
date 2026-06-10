@@ -74,12 +74,13 @@ export const GestorService = {
         }
     },
 
-    async actualizarGestor(id: string, datos: any) {
+    async actualizarGestor(id: string, datos: any, usuarioId?: string) {
         // 1. Validar si el gestor existe
         const existe = await pool.query('SELECT id, nombre, empresa_institucion FROM Gestor WHERE id = $1', [id]);
         if (existe.rows.length === 0) {
             throw new Error('El gestor no existe');
         }
+        const nombreOriginal = existe.rows[0].nombre;
 
         // 2. Validar nombre obligatorio si se envía
         if (datos.nombre !== undefined && !datos.nombre?.trim()) {
@@ -135,23 +136,46 @@ export const GestorService = {
             return existe.rows[0];
         }
 
-        valores.push(id);
-        const queryUpdate = `
-            UPDATE Gestor 
-            SET ${campos.join(', ')} 
-            WHERE id = $${index} 
-            RETURNING *
-        `;
-        const resultUpdate = await pool.query(queryUpdate, valores);
-        return resultUpdate.rows[0];
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            valores.push(id);
+            const queryUpdate = `
+                UPDATE Gestor 
+                SET ${campos.join(', ')} 
+                WHERE id = $${index} 
+                RETURNING *
+            `;
+            const resultUpdate = await client.query(queryUpdate, valores);
+
+            if (usuarioId) {
+                const nombreNuevo = resultUpdate.rows[0].nombre;
+                const msg = nombreNuevo !== nombreOriginal
+                    ? `Modificó gestor "${nombreOriginal}" (renombrado a "${nombreNuevo}")`
+                    : `Modificó gestor "${nombreOriginal}"`;
+                await client.query(
+                    `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                    [usuarioId, msg]
+                );
+            }
+
+            await client.query('COMMIT');
+            return resultUpdate.rows[0];
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     },
 
-    async eliminarGestor(id: string) {
+    async eliminarGestor(id: string, usuarioId?: string) {
         // 1. Validar si el gestor existe
-        const existe = await pool.query('SELECT id FROM Gestor WHERE id = $1', [id]);
+        const existe = await pool.query('SELECT id, nombre FROM Gestor WHERE id = $1', [id]);
         if (existe.rows.length === 0) {
             throw new Error('El gestor no existe');
         }
+        const nombreGestor = existe.rows[0].nombre;
 
         // 2. Verificar referencias en Visita
         const visitasRef = await pool.query('SELECT COUNT(*) FROM Visita WHERE gestor_id = $1', [id]);
@@ -165,7 +189,24 @@ export const GestorService = {
             throw new Error('No se puede eliminar el gestor porque tiene grupos asociados.');
         }
 
-        // 4. Eliminar
-        await pool.query('DELETE FROM Gestor WHERE id = $1', [id]);
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            // 4. Eliminar
+            await client.query('DELETE FROM Gestor WHERE id = $1', [id]);
+
+            if (usuarioId) {
+                await client.query(
+                    `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                    [usuarioId, `Eliminó el gestor "${nombreGestor}"`]
+                );
+            }
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 };

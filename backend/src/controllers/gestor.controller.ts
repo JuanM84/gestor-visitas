@@ -60,7 +60,8 @@ export const GestorController = {
                 });
             }
             
-            const gestorActualizado = await GestorService.actualizarGestor(id as string, req.body);
+            const usuarioId = (req as any).usuario?.id;
+            const gestorActualizado = await GestorService.actualizarGestor(id as string, req.body, usuarioId);
             res.status(200).json({ mensaje: 'Gestor actualizado exitosamente', gestor: gestorActualizado });
         } catch (error: any) {
             res.status(400).json({ error: error?.message || 'Error al actualizar el gestor' });
@@ -73,7 +74,8 @@ export const GestorController = {
             if (!id) {
                 return res.status(400).json({ error: 'El ID del gestor es obligatorio' });
             }
-            await GestorService.eliminarGestor(id as string);
+            const usuarioId = (req as any).usuario?.id;
+            await GestorService.eliminarGestor(id as string, usuarioId);
             res.status(200).json({ mensaje: 'Gestor eliminado exitosamente' });
         } catch (error: any) {
             res.status(400).json({ error: error?.message || 'Error al eliminar el gestor' });

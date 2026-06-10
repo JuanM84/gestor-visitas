@@ -17,7 +17,8 @@ export const DiaInhabilController = {
             if (!fecha || !descripcion) {
                 return res.status(400).json({ error: 'La fecha y descripción son obligatorias' });
             }
-            const nuevoDia = await DiaInhabilService.agregar(fecha, descripcion);
+            const usuarioId = (req as any).usuario?.id;
+            const nuevoDia = await DiaInhabilService.agregar(fecha, descripcion, usuarioId);
             res.status(201).json(nuevoDia);
         } catch (error: any) {
             const msg = error?.message || '';
@@ -29,7 +30,8 @@ export const DiaInhabilController = {
     async deleteDia(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            await DiaInhabilService.eliminar(String(id));
+            const usuarioId = (req as any).usuario?.id;
+            await DiaInhabilService.eliminar(String(id), usuarioId);
             res.status(204).send();
         } catch (error) {
             res.status(500).json({ error: 'Error al eliminar el día inhábil' });

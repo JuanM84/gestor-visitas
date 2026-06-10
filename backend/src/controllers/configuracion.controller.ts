@@ -20,7 +20,8 @@ export const ConfiguracionController = {
 
             if (!valor) return res.status(400).json({ error: 'El valor es requerido' });
 
-            const actualizado = await ConfiguracionService.actualizarValor(clave as string, valor.toString());
+            const usuarioId = (req as any).usuario?.id;
+            const actualizado = await ConfiguracionService.actualizarValor(clave as string, valor.toString(), usuarioId);
             res.status(200).json({ mensaje: 'Configuración guardada', data: actualizado });
         } catch (error: any) {
             res.status(400).json({ error: error?.message || 'Error al guardar configuración' });

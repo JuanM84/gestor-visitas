@@ -11,7 +11,7 @@ export const ConfiguracionService = {
         return result.rows[0].valor;
     },
 
-    async actualizarValor(clave: string, valor: string) {
+    async actualizarValor(clave: string, valor: string, usuarioId?: string) {
         // C-1: Validar rango de aforo máximo
         if (clave === 'capacidad_maxima') {
             const num = parseInt(valor, 10);
@@ -27,14 +27,42 @@ export const ConfiguracionService = {
             }
         }
 
-        const existe = await pool.query('SELECT clave FROM Configuracion WHERE clave = $1', [clave]);
+        const existe = await pool.query('SELECT clave, valor FROM Configuracion WHERE clave = $1', [clave]);
+        const valorAnterior = existe.rows.length > 0 ? existe.rows[0].valor : null;
 
-        if (existe.rows.length > 0) {
-            const result = await pool.query('UPDATE Configuracion SET valor = $2 WHERE clave = $1 RETURNING *', [clave, valor]);
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            let result;
+            if (existe.rows.length > 0) {
+                result = await client.query('UPDATE Configuracion SET valor = $2 WHERE clave = $1 RETURNING *', [clave, valor]);
+            } else {
+                result = await client.query('INSERT INTO Configuracion (clave, valor) VALUES ($1, $2) RETURNING *', [clave, valor]);
+            }
+
+            if (usuarioId) {
+                const nombreParametro = 
+                    clave === 'capacidad_maxima' ? 'Aforo máximo diario' :
+                    clave === 'session_timeout_minutes' ? 'Timeout de sesión' : clave;
+                
+                const valorDetalle = valorAnterior !== null 
+                    ? `de "${valorAnterior}" a "${valor}"` 
+                    : `a "${valor}"`;
+
+                await client.query(
+                    `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                    [usuarioId, `Actualizó configuración "${nombreParametro}" ${valorDetalle}`]
+                );
+            }
+
+            await client.query('COMMIT');
             return result.rows[0];
-        } else {
-            const result = await pool.query('INSERT INTO Configuracion (clave, valor) VALUES ($1, $2) RETURNING *', [clave, valor]);
-            return result.rows[0];
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
         }
     }
 };
