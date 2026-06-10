@@ -17,13 +17,23 @@ export const InstitucionService = {
             throw new Error('El nombre de la institución es obligatorio');
         }
 
-        // G-7: Detectar institución duplicada por nombre
+        const nombre = datos.nombre?.trim() || '';
+        const localidad = datos.localidad?.trim() || '';
+        const provincia = datos.provincia?.trim() || '';
+        const pais = datos.pais?.trim() || 'Argentina';
+
+        // Detectar institución duplicada por nombre, localidad, provincia y país
         const duplicado = await pool.query(
-            `SELECT id FROM Institucion WHERE LOWER(TRIM(nombre)) = LOWER(TRIM($1))`,
-            [datos.nombre]
+            `SELECT id FROM Institucion 
+             WHERE LOWER(TRIM(nombre)) = LOWER(TRIM($1))
+               AND LOWER(TRIM(COALESCE(localidad, ''))) = LOWER(TRIM($2))
+               AND LOWER(TRIM(COALESCE(provincia, ''))) = LOWER(TRIM($3))
+               AND LOWER(TRIM(COALESCE(pais, ''))) = LOWER(TRIM($4))`,
+            [nombre, localidad, provincia, pais]
         );
         if (duplicado.rows.length > 0) {
-            throw new Error(`Ya existe una institución con el nombre "${datos.nombre.trim()}"`);
+            const ubicacionInfo = [localidad, provincia, pais].filter(Boolean).join(', ');
+            throw new Error(`Ya existe la institución "${nombre}" registrada en ${ubicacionInfo || 'la misma ubicación'}.`);
         }
 
         return await InstitucionRepository.create(datos);

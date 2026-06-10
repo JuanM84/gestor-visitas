@@ -75,7 +75,7 @@ export const Sidebar = ({ abierto, onCerrar }: SidebarProps) => {
                     </button>
                 </div>
 
-                <ul className="flex flex-col flex-1 w-full gap-1">
+                <ul className="flex flex-col flex-1 w-full gap-1 overflow-y-auto min-h-0 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full">
                     {visibleNavItems.map((item) => (
                         <li key={item.name}>
                             <NavLink

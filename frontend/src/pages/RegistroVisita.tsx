@@ -49,6 +49,7 @@ export const RegistroVisita = () => {
 
     // Error
     const [errorSubmit, setErrorSubmit] = useState<string | null>(null);
+    const [errorInstitucion, setErrorInstitucion] = useState<string | null>(null);
 
     // ── Estado del formulario ──
     const [gestor_id, setGestorId] = useState('');
@@ -131,6 +132,7 @@ export const RegistroVisita = () => {
     // ── Guardar nueva institución desde modal ──
     const handleGuardarInstitucion = async () => {
         if (!nuevaInstitucion.nombre) return;
+        setErrorInstitucion(null);
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/instituciones`, {
                 method: 'POST',
@@ -143,8 +145,13 @@ export const RegistroVisita = () => {
                 manejarSeleccionarInstitucion(data.institucion.id);
                 setModalInstitucion(false);
                 setNuevaInstitucion({ nombre: '', telefono: '', email: '', localidad: '', provincia: '', pais: 'Argentina' });
+                setErrorInstitucion(null);
+            } else {
+                setErrorInstitucion(data.error || 'Error al registrar la institución.');
             }
-        } catch { }
+        } catch {
+            setErrorInstitucion('Error al registrar la institución.');
+        }
     };
 
     // ── Submit: valida y abre modal de confirmación ──
@@ -487,8 +494,14 @@ export const RegistroVisita = () => {
 
             {/* ── Modal Nueva Institución ── */}
             {modalInstitucion && (
-                <Modal titulo="Registrar Nueva Institución" onClose={() => setModalInstitucion(false)}>
+                <Modal titulo="Registrar Nueva Institución" onClose={() => { setModalInstitucion(false); setErrorInstitucion(null); }}>
                     <div className="space-y-3">
+                        {errorInstitucion && (
+                            <div className="p-3 bg-error-container/20 border border-error/50 rounded-lg text-error text-sm font-medium flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[18px]">error</span>
+                                <span className="flex-1 text-left">{errorInstitucion}</span>
+                            </div>
+                        )}
                         <div>
                             <label className="text-xs font-bold text-outline uppercase">Nombre *</label>
                             <input className={inp} placeholder="Ej: Colegio San Martín" value={nuevaInstitucion.nombre} onChange={e => setNuevaInstitucion({ ...nuevaInstitucion, nombre: e.target.value })} />
