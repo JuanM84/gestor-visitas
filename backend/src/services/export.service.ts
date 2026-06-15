@@ -893,13 +893,28 @@ export const ExportService = {
                     background-color: #ffffff;
                     -webkit-print-color-adjust: exact;
                 }
+                @page {
+                    size: A4 portrait;
+                    margin: 0;
+                }
+                @page landscape-page {
+                    size: A4 landscape;
+                    margin: 0;
+                }
                 .page {
                     padding: 15mm;
                     page-break-after: always;
                     box-sizing: border-box;
-                    height: 210mm;
+                    width: 210mm;
+                    height: 297mm;
                     display: flex;
                     flex-direction: column;
+                    background-color: #ffffff;
+                }
+                .page.landscape-page {
+                    page: landscape-page;
+                    width: 297mm;
+                    height: 210mm;
                 }
                 .page:last-child {
                     page-break-after: avoid;
@@ -1142,6 +1157,27 @@ export const ExportService = {
                 `;
                 const res = await pool.query(q, [fechaDesde, fechaHasta]);
                 rows = res.rows;
+            } else if (sec === 'santafe') {
+                sectionTitle = 'Visitantes de Santa Fe';
+                labelHeader = 'Localidad';
+                const q = `
+                    SELECT
+                        COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS label,
+                        COUNT(v.id)              AS visitas,
+                        SUM(v.cantidad_personas) AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado != 'Cancelada'
+                      AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%santa fe%'
+                      AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
+                    GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
+                    ORDER BY personas DESC
+                    LIMIT 15
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
             } else if (sec === 'inst_niveles') {
                 sectionTitle = 'Niveles Educativos';
                 labelHeader = 'Nivel Educativo';
@@ -1309,7 +1345,7 @@ export const ExportService = {
                 const maxVisitas = cleanRows.length > 0 ? Math.max(...cleanRows.map(r => r.visitas)) : 0;
 
                 htmlContent += `
-                <div class="page">
+                <div class="page landscape-page">
                     <div class="header">
                         <div>
                             <h1>Túnel Subfluvial "Raúl Uranga - Carlos Sylvestre Begnis"</h1>
@@ -1565,9 +1601,8 @@ export const ExportService = {
         await page.setContent(htmlContent, { waitUntil: 'load' });
 
         const pdfBuffer = await page.pdf({
-            format: 'A4',
-            landscape: true,
             printBackground: true,
+            preferCSSPageSize: true,
             margin: { top: '0mm', bottom: '0mm', left: '0mm', right: '0mm' }
         });
 
