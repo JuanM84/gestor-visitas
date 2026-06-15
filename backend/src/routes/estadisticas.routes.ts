@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { EstadisticasController } from '../controllers/estadisticas.controller';
 import { ExportController } from '../controllers/export.controller';
-import { verificarToken } from '../middleware/auth.middleware';
+import { verificarToken, verificarRol } from '../middleware/auth.middleware';
 
 const router = Router();
 router.get('/admin', verificarToken, EstadisticasController.getAdminDashboard);
@@ -10,5 +10,6 @@ router.get('/exportar', verificarToken, ExportController.exportarMensual);
 router.get('/exportar/diario', verificarToken, ExportController.exportarDiario);
 router.get('/exportar/rango', verificarToken, ExportController.exportarRango);
 router.get('/exportar/visita/:id', verificarToken, ExportController.exportarComprobanteVisita);
+router.get('/exportar/informe', verificarToken, verificarRol(['Admin']), ExportController.exportarInformeStats);
 
 export default router;

@@ -85,7 +85,7 @@ export const ExportService = {
 
         return csvContent;
     },
-    async generarReporteMensualPDF(mes: number, anio: number) {
+    async generarReporteMensualPDF(mes: number, anio: number, usuarioNombre: string) {
         const query = `
             SELECT 
                 v.fecha, 
@@ -130,6 +130,15 @@ export const ExportService = {
                 .summary { margin-top: 30px; float: right; width: 250px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; }
                 .summary h3 { margin: 0 0 10px 0; font-size: 14px; color: #0369a1; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; }
                 .summary-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+                .pdf-footer {
+                    clear: both;
+                    margin-top: 40px;
+                    border-top: 1px solid #cbd5e1;
+                    padding-top: 10px;
+                    text-align: center;
+                    font-size: 10px;
+                    color: #64748b;
+                }
             </style>
         </head>
         <body>
@@ -170,6 +179,9 @@ export const ExportService = {
                 <div class="summary-item">Total Visitas: <b>${visitas.length}</b></div>
                 <div class="summary-item">Total Personas: <b>${totalPersonas}</b></div>
             </div>
+            <div class="pdf-footer">
+                Generado ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs - ${usuarioNombre}
+            </div>
         </body>
         </html>
         `;
@@ -187,7 +199,7 @@ export const ExportService = {
         return pdfBuffer;
     },
 
-    async generarReporteDiarioPDF(fecha: string) {
+    async generarReporteDiarioPDF(fecha: string, usuarioNombre: string) {
         const query = `
             SELECT
                 v.hora_inicio  AS hora,
@@ -244,6 +256,15 @@ export const ExportService = {
                 .summary h3 { margin: 0 0 10px 0; font-size: 14px; color: #0369a1; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; }
                 .summary-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
                 .empty { text-align: center; padding: 40px; color: #94a3b8; font-style: italic; }
+                .pdf-footer {
+                    clear: both;
+                    margin-top: 40px;
+                    border-top: 1px solid #cbd5e1;
+                    padding-top: 10px;
+                    text-align: center;
+                    font-size: 10px;
+                    color: #64748b;
+                }
             </style>
         </head>
         <body>
@@ -296,6 +317,9 @@ export const ExportService = {
                 <div class="summary-item">Cruces Túnel: <b>${totalCruces}</b></div>
             </div>
             `}
+            <div class="pdf-footer">
+                Generado ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs - ${usuarioNombre}
+            </div>
         </body>
         </html>
         `;
@@ -314,7 +338,7 @@ export const ExportService = {
         return pdfBuffer;
     },
 
-    async generarReporteRangoPDF(fechaDesde: string, fechaHasta: string) {
+    async generarReporteRangoPDF(fechaDesde: string, fechaHasta: string, usuarioNombre: string) {
         const query = `
             SELECT 
                 v.fecha, 
@@ -364,6 +388,15 @@ export const ExportService = {
                 .summary h3 { margin: 0 0 10px 0; font-size: 14px; color: #0369a1; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; }
                 .summary-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
                 .empty { text-align: center; padding: 40px; color: #94a3b8; font-style: italic; }
+                .pdf-footer {
+                    clear: both;
+                    margin-top: 40px;
+                    border-top: 1px solid #cbd5e1;
+                    padding-top: 10px;
+                    text-align: center;
+                    font-size: 10px;
+                    color: #64748b;
+                }
             </style>
         </head>
         <body>
@@ -411,6 +444,9 @@ export const ExportService = {
                 <div class="summary-item">Total Personas: <b>${totalPersonas}</b></div>
             </div>
             `}
+            <div class="pdf-footer">
+                Generado ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs - ${usuarioNombre}
+            </div>
         </body>
         </html>
         `;
@@ -429,7 +465,7 @@ export const ExportService = {
         return pdfBuffer;
     },
 
-    async generarComprobanteVisitaPDF(id: string) {
+    async generarComprobanteVisitaPDF(id: string, usuarioNombre: string) {
         const v = await VisitaRepository.getById(id);
         if (!v) throw new Error('La visita no existe');
 
@@ -803,7 +839,7 @@ export const ExportService = {
 
                 <div class="footer-text">
                     Túnel Subfluvial "Raúl Uranga - Carlos Sylvestre Begnis"<br>
-                    Documento de confirmación de turno. Generado el ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs.
+                    Documento de confirmación de turno. Generado ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs - ${usuarioNombre}
                 </div>
             </div>
         </body>
@@ -818,6 +854,721 @@ export const ExportService = {
             format: 'A4',
             printBackground: true,
             margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }
+        });
+
+        await browser.close();
+        return pdfBuffer;
+    },
+
+    async generarInformeStatsPDF(fechaDesde: string, fechaHasta: string, titulo: string, secciones: string[], usuarioNombre: string) {
+        const formatFecha = (f: string) => {
+            const [y, m, d] = f.split('-');
+            return `${d}/${m}/${y}`;
+        };
+
+        let tituloInforme = titulo.trim();
+        const isInst = secciones.some(s => s.startsWith('inst_'));
+        if (!tituloInforme) {
+            tituloInforme = `Informe ${formatFecha(fechaDesde)} - ${formatFecha(fechaHasta)}`;
+            if (isInst) {
+                tituloInforme += ' - Instituciones';
+            }
+        } else {
+            if (isInst && !tituloInforme.toLowerCase().endsWith(' - instituciones')) {
+                tituloInforme += ' - Instituciones';
+            }
+        }
+
+        let htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { 
+                    font-family: 'Helvetica', sans-serif; 
+                    color: #334155; 
+                    margin: 0; 
+                    padding: 0; 
+                    background-color: #ffffff;
+                    -webkit-print-color-adjust: exact;
+                }
+                .page {
+                    padding: 15mm;
+                    page-break-after: always;
+                    box-sizing: border-box;
+                    height: 210mm;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .page:last-child {
+                    page-break-after: avoid;
+                }
+                .header { 
+                    border-bottom: 2px solid #004a77; 
+                    padding-bottom: 10px; 
+                    margin-bottom: 25px; 
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                }
+                .header h1 { 
+                    color: #004a77; 
+                    margin: 0; 
+                    font-size: 20px; 
+                    font-weight: 800;
+                }
+                .header p { 
+                    color: #64748b; 
+                    margin: 5px 0 0 0; 
+                    font-size: 11px; 
+                }
+                .logo-placeholder {
+                    font-weight: 900;
+                    color: #004a77;
+                    font-size: 14px;
+                    letter-spacing: 1px;
+                }
+                .report-title-container {
+                    margin-bottom: 30px;
+                    background-color: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 15px 20px;
+                }
+                .report-title {
+                    font-size: 22px;
+                    color: #0f172a;
+                    margin: 0 0 8px 0;
+                    font-weight: bold;
+                }
+                .report-subtitle {
+                    font-size: 12px;
+                    color: #64748b;
+                    margin: 0;
+                }
+                .section-title-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    border-bottom: 1px solid #cbd5e1;
+                    padding-bottom: 8px;
+                    margin-bottom: 20px;
+                }
+                .section-title {
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #004a77;
+                    margin: 0;
+                }
+                .grid-2 {
+                    display: flex;
+                    gap: 30px;
+                    margin-top: 15px;
+                }
+                .col-chart {
+                    flex: 1.2;
+                }
+                .col-table {
+                    flex: 0.8;
+                }
+                .chart-container {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    background: #ffffff;
+                    border: 1px solid #f1f5f9;
+                    padding: 15px;
+                    border-radius: 12px;
+                }
+                .chart-row {
+                    display: flex;
+                    align-items: center;
+                }
+                .chart-label {
+                    width: 120px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    color: #475569;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    padding-right: 8px;
+                    text-align: right;
+                }
+                .chart-bar-wrapper {
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .chart-bar-container {
+                    flex: 1;
+                    background-color: #f1f5f9;
+                    height: 12px;
+                    border-radius: 6px;
+                    overflow: hidden;
+                }
+                .chart-bar {
+                    background: linear-gradient(90deg, #0284c7 0%, #004a77 100%);
+                    height: 100%;
+                    border-radius: 6px;
+                }
+                .chart-value {
+                    font-size: 10px;
+                    font-weight: bold;
+                    color: #004a77;
+                    min-width: 30px;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    font-size: 10px; 
+                }
+                th { 
+                    background-color: #f8fafc; 
+                    color: #475569; 
+                    text-align: left; 
+                    padding: 8px; 
+                    border-bottom: 2px solid #e2e8f0; 
+                    font-weight: 700;
+                }
+                td { 
+                    padding: 8px; 
+                    border-bottom: 1px solid #f1f5f9; 
+                }
+                tr:last-child td {
+                    border-bottom: none;
+                }
+                .text-right {
+                    text-align: right;
+                }
+                .font-bold {
+                    font-weight: bold;
+                }
+                .total-row {
+                    background-color: #f8fafc;
+                    font-weight: bold;
+                    border-top: 1px solid #e2e8f0;
+                }
+                .footer {
+                    margin-top: auto;
+                    text-align: center;
+                    font-size: 9px;
+                    color: #94a3b8;
+                    border-top: 1px solid #f1f5f9;
+                    padding-top: 10px;
+                }
+                .empty-state {
+                    padding: 40px;
+                    text-align: center;
+                    color: #94a3b8;
+                    font-style: italic;
+                    background-color: #f8fafc;
+                    border-radius: 12px;
+                    border: 1px dashed #cbd5e1;
+                    font-size: 12px;
+                }
+            </style>
+        </head>
+        <body>
+        `;
+
+        for (const sec of secciones) {
+            let sectionTitle = '';
+            let labelHeader = '';
+            let rows: any[] = [];
+
+            if (sec === 'nacionales') {
+                sectionTitle = 'Visitantes Nacionales';
+                labelHeader = 'Provincia';
+                const q = `
+                    SELECT
+                        COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar') AS label,
+                        COUNT(v.id)              AS visitas,
+                        SUM(v.cantidad_personas) AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado != 'Cancelada'
+                      AND UPPER(TRIM(COALESCE(inst.pais, gr.pais, ''))) IN ('ARGENTINA', '')
+                      AND COALESCE(inst.provincia, gr.provincia) IS NOT NULL AND TRIM(COALESCE(inst.provincia, gr.provincia)) != ''
+                    GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar')
+                    ORDER BY personas DESC
+                    LIMIT 15
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
+            } else if (sec === 'extranjeros') {
+                sectionTitle = 'Visitantes Extranjeros';
+                labelHeader = 'País';
+                const q = `
+                    SELECT
+                        COALESCE(NULLIF(TRIM(COALESCE(inst.pais, gr.pais)), ''), 'Sin especificar') AS label,
+                        COUNT(v.id)              AS visitas,
+                        SUM(v.cantidad_personas) AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado != 'Cancelada'
+                      AND UPPER(TRIM(COALESCE(inst.pais, gr.pais, ''))) NOT IN ('ARGENTINA', '')
+                      AND COALESCE(inst.pais, gr.pais) IS NOT NULL AND TRIM(COALESCE(inst.pais, gr.pais)) != ''
+                    GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.pais, gr.pais)), ''), 'Sin especificar')
+                    ORDER BY personas DESC
+                    LIMIT 15
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
+            } else if (sec === 'entrerios') {
+                sectionTitle = 'Visitantes de Entre Ríos';
+                labelHeader = 'Localidad';
+                const q = `
+                    SELECT
+                        COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS label,
+                        COUNT(v.id)              AS visitas,
+                        SUM(v.cantidad_personas) AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado != 'Cancelada'
+                      AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%entre r%'
+                      AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
+                    GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
+                    ORDER BY personas DESC
+                    LIMIT 15
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
+            } else if (sec === 'inst_niveles') {
+                sectionTitle = 'Niveles Educativos';
+                labelHeader = 'Nivel Educativo';
+                const q = `
+                    SELECT
+                        COALESCE(NULLIF(TRIM(gr.nivel_educativo), ''), 'Sin especificar') AS label,
+                        COUNT(v.id)              AS visitas,
+                        SUM(v.cantidad_personas) AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado != 'Cancelada'
+                      AND gr.tipo_visitante = 'Institución'
+                    GROUP BY COALESCE(NULLIF(TRIM(gr.nivel_educativo), ''), 'Sin especificar')
+                    ORDER BY personas DESC
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
+            } else if (sec === 'inst_entrerios') {
+                sectionTitle = 'Localidades de Entre Ríos (Instituciones)';
+                labelHeader = 'Localidad';
+                const q = `
+                    SELECT
+                        COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS label,
+                        COUNT(v.id)              AS visitas,
+                        SUM(v.cantidad_personas) AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado != 'Cancelada'
+                      AND gr.tipo_visitante = 'Institución'
+                      AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%entre r%'
+                      AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
+                    GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
+                    ORDER BY personas DESC
+                    LIMIT 15
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
+            } else if (sec === 'inst_santafe') {
+                sectionTitle = 'Localidades de Santa Fe (Instituciones)';
+                labelHeader = 'Localidad';
+                const q = `
+                    SELECT
+                        COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS label,
+                        COUNT(v.id)              AS visitas,
+                        SUM(v.cantidad_personas) AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado != 'Cancelada'
+                      AND gr.tipo_visitante = 'Institución'
+                      AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%santa fe%'
+                      AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
+                    GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
+                    ORDER BY personas DESC
+                    LIMIT 15
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
+            } else if (sec === 'inst_cruces') {
+                sectionTitle = 'Instituciones con Cruce de Túnel';
+                const q = `
+                    SELECT
+                        v.fecha,
+                        gr.nombre AS grupo_nombre,
+                        COALESCE(inst.localidad, gr.localidad) AS localidad,
+                        COALESCE(inst.provincia, gr.provincia) AS provincia,
+                        v.cantidad_personas AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado != 'Cancelada'
+                      AND gr.tipo_visitante = 'Institución'
+                      AND v.tiene_cruce_tunel = true
+                    ORDER BY v.fecha ASC, v.hora_inicio ASC
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
+            }
+
+            if (sec === 'inst_cruces') {
+                const totalPersonas = rows.reduce((sum, r) => sum + (parseInt(r.personas) || 0), 0);
+                htmlContent += `
+                <div class="page">
+                    <div class="header">
+                        <div>
+                            <h1>Túnel Subfluvial "Raúl Uranga - Carlos Sylvestre Begnis"</h1>
+                            <p>Sistema de Gestión de Visitas - Informe Estadístico</p>
+                        </div>
+                        <div class="logo-placeholder">TÚNEL SUBFLUVIAL</div>
+                    </div>
+
+                    <div class="report-title-container">
+                        <h2 class="report-title">${tituloInforme}</h2>
+                        <p class="report-subtitle">Período: ${formatFecha(fechaDesde)} al ${formatFecha(fechaHasta)}</p>
+                    </div>
+
+                    <div class="section-title-container">
+                        <span class="section-title">${sectionTitle}</span>
+                    </div>
+                `;
+
+                if (rows.length === 0) {
+                    htmlContent += `
+                    <div class="empty-state">
+                        No se registraron visitas para esta categoría en el período especificado.
+                    </div>
+                    `;
+                } else {
+                    htmlContent += `
+                    <div style="margin-top: 15px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr>
+                                    <th style="background-color: #f8fafc; color: #475569; text-align: left; padding: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Fecha</th>
+                                    <th style="background-color: #f8fafc; color: #475569; text-align: left; padding: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Institución</th>
+                                    <th style="background-color: #f8fafc; color: #475569; text-align: left; padding: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Localidad</th>
+                                    <th style="background-color: #f8fafc; color: #475569; text-align: left; padding: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Provincia</th>
+                                    <th style="background-color: #f8fafc; color: #475569; text-align: right; padding: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Personas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map(r => `
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${new Date(r.fecha).toLocaleDateString('es-AR', { timeZone: 'UTC' })}</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;" class="font-bold">${r.grupo_nombre}</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${r.localidad || '—'}</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${r.provincia || '—'}</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; color: #004a77;" class="text-right font-bold">${r.personas}</td>
+                                </tr>
+                                `).join('')}
+                                <tr class="total-row">
+                                    <td style="padding: 8px;" colspan="4">TOTAL</td>
+                                    <td style="padding: 8px; color: #004a77;" class="text-right">${totalPersonas}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    `;
+                }
+
+                htmlContent += `
+                    <div class="footer">
+                        Página de informe estadístico - Generado ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs - ${usuarioNombre}
+                    </div>
+                </div>
+                `;
+
+                continue;
+            }
+
+            if (sec === 'inst_niveles') {
+                const cleanRows = rows.map(r => ({
+                    label: r.label,
+                    visitas: parseInt(r.visitas) || 0,
+                    personas: parseInt(r.personas) || 0
+                }));
+
+                const totalVisitas = cleanRows.reduce((sum, r) => sum + r.visitas, 0);
+                const totalPersonas = cleanRows.reduce((sum, r) => sum + r.personas, 0);
+                const maxVisitas = cleanRows.length > 0 ? Math.max(...cleanRows.map(r => r.visitas)) : 0;
+
+                htmlContent += `
+                <div class="page">
+                    <div class="header">
+                        <div>
+                            <h1>Túnel Subfluvial "Raúl Uranga - Carlos Sylvestre Begnis"</h1>
+                            <p>Sistema de Gestión de Visitas - Informe Estadístico</p>
+                        </div>
+                        <div class="logo-placeholder">TÚNEL SUBFLUVIAL</div>
+                    </div>
+
+                    <div class="report-title-container">
+                        <h2 class="report-title">${tituloInforme}</h2>
+                        <p class="report-subtitle">Período: ${formatFecha(fechaDesde)} al ${formatFecha(fechaHasta)}</p>
+                    </div>
+
+                    <div class="section-title-container">
+                        <span class="section-title">${sectionTitle}</span>
+                    </div>
+                `;
+
+                if (cleanRows.length === 0) {
+                    htmlContent += `
+                    <div class="empty-state">
+                        No se registraron visitas para esta categoría en el período especificado.
+                    </div>
+                    `;
+                } else {
+                    const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e'];
+                    let cumulativePercent = 0;
+                    const slices = cleanRows.map((r, idx) => {
+                        const percent = totalPersonas > 0 ? (r.personas / totalPersonas) * 100 : 0;
+                        const color = colors[idx % colors.length];
+                        const start = cumulativePercent;
+                        cumulativePercent += percent;
+                        return {
+                            label: r.label,
+                            personas: r.personas,
+                            percent: percent,
+                            color: color,
+                            start: start.toFixed(1),
+                            end: cumulativePercent.toFixed(1)
+                        };
+                    });
+                    
+                    const conicGradient = slices.map(s => `${s.color} ${s.start}% ${s.end}%`).join(', ');
+
+                    htmlContent += `
+                    <div class="grid-2">
+                        <div class="col-chart" style="display: flex; flex-direction: column; gap: 20px;">
+                            <div>
+                                <div style="font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 8px;">
+                                    Distribución de Visitantes (Torta)
+                                </div>
+                                <div class="chart-container" style="display: flex; flex-direction: row; align-items: center; padding: 15px; min-height: 140px;">
+                                    <div style="width: 50%; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
+                                        <div style="width: 110px; height: 110px; border-radius: 50%; background: conic-gradient(${conicGradient}); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);"></div>
+                                    </div>
+                                    <div style="width: 50%; display: flex; flex-direction: column; gap: 5px; justify-content: center; padding-left: 10px;">
+                                        ${slices.map(s => `
+                                        <div style="display: flex; align-items: center; gap: 6px; font-size: 9px; line-height: 1.2;">
+                                            <div style="width: 8px; height: 8px; border-radius: 2px; background-color: ${s.color}; flex-shrink: 0;"></div>
+                                            <span style="font-weight: 600; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;" title="${s.label}">${s.label}:</span>
+                                            <span style="color: #0f172a; font-weight: bold; white-space: nowrap;">${s.personas} (${s.percent.toFixed(1)}%)</span>
+                                        </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 8px;">
+                                    Cantidad de Grupos (Barras Verticales)
+                                </div>
+                                <div class="chart-container" style="padding: 15px 20px 10px 20px;">
+                                    <div style="display: flex; align-items: flex-end; justify-content: space-around; height: 110px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
+                                        ${cleanRows.map((r, idx) => {
+                                            const heightPct = maxVisitas > 0 ? (r.visitas / maxVisitas) * 100 : 0;
+                                            const color = colors[idx % colors.length];
+                                            return `
+                                            <div style="display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 30px; max-width: 60px;">
+                                                <span style="font-size: 8px; font-weight: bold; color: #004a77; margin-bottom: 3px;">${r.visitas}</span>
+                                                <div style="height: 70px; display: flex; align-items: flex-end; width: 18px;">
+                                                    <div style="width: 100%; height: ${heightPct.toFixed(1)}%; min-height: 2px; background: ${color}; border-radius: 3px 3px 0 0;"></div>
+                                                </div>
+                                                <span style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;" title="${r.label}">${r.label}</span>
+                                            </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-table">
+                            <div style="font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 8px;">
+                                Detalle de Datos
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>${labelHeader}</th>
+                                        <th class="text-right">Visitas</th>
+                                        <th class="text-right">Personas</th>
+                                        <th class="text-right">% Part.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${cleanRows.map(r => {
+                                        const part = totalPersonas > 0 ? ((r.personas / totalPersonas) * 100).toFixed(1) : '0.0';
+                                        return `
+                                        <tr>
+                                            <td class="font-bold">${r.label}</td>
+                                            <td class="text-right">${r.visitas}</td>
+                                            <td class="text-right font-bold" style="color: #004a77;">${r.personas}</td>
+                                            <td class="text-right">${part}%</td>
+                                        </tr>
+                                        `;
+                                    }).join('')}
+                                    <tr class="total-row">
+                                        <td>TOTAL</td>
+                                        <td class="text-right">${totalVisitas}</td>
+                                        <td class="text-right" style="color: #004a77;">${totalPersonas}</td>
+                                        <td class="text-right">100.0%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    `;
+                }
+
+                htmlContent += `
+                    <div class="footer">
+                        Página de informe estadístico - Generado ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs - ${usuarioNombre}
+                    </div>
+                </div>
+                `;
+
+                continue;
+            }
+
+            const cleanRows = rows.map(r => ({
+                label: r.label,
+                visitas: parseInt(r.visitas) || 0,
+                personas: parseInt(r.personas) || 0
+            }));
+
+            const totalVisitas = cleanRows.reduce((sum, r) => sum + r.visitas, 0);
+            const totalPersonas = cleanRows.reduce((sum, r) => sum + r.personas, 0);
+            const maxPersonas = cleanRows.length > 0 ? Math.max(...cleanRows.map(r => r.personas)) : 0;
+
+            htmlContent += `
+            <div class="page">
+                <div class="header">
+                    <div>
+                        <h1>Túnel Subfluvial "Raúl Uranga - Carlos Sylvestre Begnis"</h1>
+                        <p>Sistema de Gestión de Visitas - Informe Estadístico</p>
+                    </div>
+                    <div class="logo-placeholder">TÚNEL SUBFLUVIAL</div>
+                </div>
+
+                <div class="report-title-container">
+                    <h2 class="report-title">${tituloInforme}</h2>
+                    <p class="report-subtitle">Período: ${formatFecha(fechaDesde)} al ${formatFecha(fechaHasta)}</p>
+                </div>
+
+                <div class="section-title-container">
+                    <span class="section-title">${sectionTitle}</span>
+                </div>
+            `;
+
+            if (cleanRows.length === 0) {
+                htmlContent += `
+                <div class="empty-state">
+                    No se registraron visitas para esta categoría en el período especificado.
+                </div>
+                `;
+            } else {
+                htmlContent += `
+                <div class="grid-2">
+                    <div class="col-chart">
+                        <div style="font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 10px;">
+                            Visitantes
+                        </div>
+                        <div class="chart-container">
+                            ${cleanRows.map(r => {
+                                const percentage = maxPersonas > 0 ? (r.personas / maxPersonas) * 100 : 0;
+                                return `
+                                <div class="chart-row">
+                                    <div class="chart-label">${r.label}</div>
+                                    <div class="chart-bar-wrapper">
+                                        <div class="chart-bar-container">
+                                            <div class="chart-bar" style="width: ${percentage}%;"></div>
+                                        </div>
+                                        <span class="chart-value">${r.personas}</span>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="col-table">
+                        <div style="font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 10px;">
+                            Detalle de Datos
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>${labelHeader}</th>
+                                    <th class="text-right">Visitas</th>
+                                    <th class="text-right">Personas</th>
+                                    <th class="text-right">% Part.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${cleanRows.map(r => {
+                                    const part = totalPersonas > 0 ? ((r.personas / totalPersonas) * 100).toFixed(1) : '0.0';
+                                    return `
+                                    <tr>
+                                        <td class="font-bold">${r.label}</td>
+                                        <td class="text-right">${r.visitas}</td>
+                                        <td class="text-right font-bold" style="color: #004a77;">${r.personas}</td>
+                                        <td class="text-right">${part}%</td>
+                                    </tr>
+                                    `;
+                                }).join('')}
+                                <tr class="total-row">
+                                    <td>TOTAL</td>
+                                    <td class="text-right">${totalVisitas}</td>
+                                    <td class="text-right" style="color: #004a77;">${totalPersonas}</td>
+                                    <td class="text-right">100.0%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                `;
+            }
+
+            htmlContent += `
+                <div class="footer">
+                    Página de informe estadístico - Generado ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs - ${usuarioNombre}
+                </div>
+            </div>
+            `;
+        }
+
+        htmlContent += `
+        </body>
+        </html>
+        `;
+
+        const browser = await getBrowserInstance();
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'load' });
+
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            landscape: true,
+            printBackground: true,
+            margin: { top: '0mm', bottom: '0mm', left: '0mm', right: '0mm' }
         });
 
         await browser.close();

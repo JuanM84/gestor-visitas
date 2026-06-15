@@ -11,6 +11,7 @@ const navItems = [
     { name: 'Gestores', icon: 'groups', path: '/gestores' },
     { name: 'Listado', icon: 'print', path: '/listado' },
     { name: 'Estadísticas', icon: 'analytics', path: '/estadisticas' },
+    { name: 'Informes', icon: 'description', path: '/informes', roles: ['Admin'] },
     { name: 'Usuarios', icon: 'manage_accounts', path: '/usuarios', roles: ['Admin'] },
     { name: 'Configuraciones', icon: 'settings', path: '/configuraciones', roles: ['Admin'] },
 ];

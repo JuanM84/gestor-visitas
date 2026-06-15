@@ -12,6 +12,7 @@ import { EditarVisita } from './pages/EditarVisita';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Gestores } from './pages/Gestores';
 import { DashboardAdmin } from './pages/DashboardAdmin';
+import { Informes } from './pages/Informes';
 import { Auditoria } from './pages/Auditoria';
 import { Listado } from './pages/Listado';
 
@@ -72,6 +73,11 @@ function App() {
         <Route path="/estadisticas" element={
           <ProtectedRoute>
             <MainLayout><DashboardAdmin /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/informes" element={
+          <ProtectedRoute>
+            <MainLayout><Informes /></MainLayout>
           </ProtectedRoute>
         } />
         <Route path="/listado" element={
