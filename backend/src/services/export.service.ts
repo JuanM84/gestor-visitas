@@ -1101,7 +1101,9 @@ export const ExportService = {
                     SELECT
                         COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar') AS label,
                         COUNT(v.id)              AS visitas,
-                        SUM(v.cantidad_personas) AS personas
+                        SUM(v.cantidad_personas) AS personas,
+                        SUM(CASE WHEN gr.tipo_visitante = 'Particulares' THEN v.cantidad_personas ELSE 0 END) AS personas_particular,
+                        SUM(CASE WHEN gr.tipo_visitante = 'Institución' THEN v.cantidad_personas ELSE 0 END) AS personas_institucion
                     FROM Visita v
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
@@ -1122,7 +1124,9 @@ export const ExportService = {
                     SELECT
                         COALESCE(NULLIF(TRIM(COALESCE(inst.pais, gr.pais)), ''), 'Sin especificar') AS label,
                         COUNT(v.id)              AS visitas,
-                        SUM(v.cantidad_personas) AS personas
+                        SUM(v.cantidad_personas) AS personas,
+                        SUM(CASE WHEN gr.tipo_visitante = 'Particulares' THEN v.cantidad_personas ELSE 0 END) AS personas_particular,
+                        SUM(CASE WHEN gr.tipo_visitante = 'Institución' THEN v.cantidad_personas ELSE 0 END) AS personas_institucion
                     FROM Visita v
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
@@ -1143,7 +1147,9 @@ export const ExportService = {
                     SELECT
                         COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS label,
                         COUNT(v.id)              AS visitas,
-                        SUM(v.cantidad_personas) AS personas
+                        SUM(v.cantidad_personas) AS personas,
+                        SUM(CASE WHEN gr.tipo_visitante = 'Particulares' THEN v.cantidad_personas ELSE 0 END) AS personas_particular,
+                        SUM(CASE WHEN gr.tipo_visitante = 'Institución' THEN v.cantidad_personas ELSE 0 END) AS personas_institucion
                     FROM Visita v
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
@@ -1164,7 +1170,9 @@ export const ExportService = {
                     SELECT
                         COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar') AS label,
                         COUNT(v.id)              AS visitas,
-                        SUM(v.cantidad_personas) AS personas
+                        SUM(v.cantidad_personas) AS personas,
+                        SUM(CASE WHEN gr.tipo_visitante = 'Particulares' THEN v.cantidad_personas ELSE 0 END) AS personas_particular,
+                        SUM(CASE WHEN gr.tipo_visitante = 'Institución' THEN v.cantidad_personas ELSE 0 END) AS personas_institucion
                     FROM Visita v
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
@@ -1197,7 +1205,7 @@ export const ExportService = {
                 const res = await pool.query(q, [fechaDesde, fechaHasta]);
                 rows = res.rows;
             } else if (sec === 'inst_entrerios') {
-                sectionTitle = 'Localidades de Entre Ríos (Instituciones)';
+                sectionTitle = 'Instituciones de Entre Ríos';
                 labelHeader = 'Localidad';
                 const q = `
                     SELECT
@@ -1219,7 +1227,7 @@ export const ExportService = {
                 const res = await pool.query(q, [fechaDesde, fechaHasta]);
                 rows = res.rows;
             } else if (sec === 'inst_santafe') {
-                sectionTitle = 'Localidades de Santa Fe (Instituciones)';
+                sectionTitle = 'Instituciones de Santa Fe';
                 labelHeader = 'Localidad';
                 const q = `
                     SELECT
@@ -1487,12 +1495,15 @@ export const ExportService = {
             const cleanRows = rows.map(r => ({
                 label: r.label,
                 visitas: parseInt(r.visitas) || 0,
-                personas: parseInt(r.personas) || 0
+                personas: parseInt(r.personas) || 0,
+                personas_particular: parseInt(r.personas_particular) || 0,
+                personas_institucion: parseInt(r.personas_institucion) || 0
             }));
 
             const totalVisitas = cleanRows.reduce((sum, r) => sum + r.visitas, 0);
             const totalPersonas = cleanRows.reduce((sum, r) => sum + r.personas, 0);
             const maxPersonas = cleanRows.length > 0 ? Math.max(...cleanRows.map(r => r.personas)) : 0;
+            const isComposite = !sec.startsWith('inst_');
 
             htmlContent += `
             <div class="page">
@@ -1528,16 +1539,40 @@ export const ExportService = {
                             Visitantes
                         </div>
                         <div class="chart-container">
+                            ${isComposite ? `
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px; justify-content: flex-end; font-size: 10px; font-weight: bold; color: #64748b; padding-right: 5px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div style="width: 10px; height: 10px; background-color: #0284c7; border-radius: 3px;"></div>
+                                    Particulares
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div style="width: 10px; height: 10px; background-color: #10b981; border-radius: 3px;"></div>
+                                    Instituciones
+                                </div>
+                            </div>
+                            ` : ''}
                             ${cleanRows.map(r => {
                                 const percentage = maxPersonas > 0 ? (r.personas / maxPersonas) * 100 : 0;
+                                const partPct = r.personas > 0 ? (r.personas_particular / r.personas) * 100 : 0;
+                                const instPct = r.personas > 0 ? (r.personas_institucion / r.personas) * 100 : 0;
                                 return `
                                 <div class="chart-row">
                                     <div class="chart-label">${r.label}</div>
                                     <div class="chart-bar-wrapper">
                                         <div class="chart-bar-container">
-                                            <div class="chart-bar" style="width: ${percentage}%;"></div>
+                                            ${isComposite ? `
+                                            <div style="display: flex; width: ${percentage}%; height: 100%; border-radius: 6px; overflow: hidden;">
+                                                ${partPct > 0 ? `<div style="width: ${partPct}%; background-color: #0284c7; height: 100%;"></div>` : ''}
+                                                ${instPct > 0 ? `<div style="width: ${instPct}%; background-color: #10b981; height: 100%;"></div>` : ''}
+                                            </div>
+                                            ` : `
+                                            <div style="width: ${percentage}%; background-color: #10b981; height: 100%; border-radius: 6px;"></div>
+                                            `}
                                         </div>
-                                        <span class="chart-value">${r.personas}</span>
+                                        <span class="chart-value" style="white-space: nowrap;">
+                                            ${r.personas}
+                                            ${isComposite ? `<span style="font-weight: normal; color: #64748b; font-size: 8px;">(${r.personas_particular} Part. / ${r.personas_institucion} Inst.)</span>` : ''}
+                                        </span>
                                     </div>
                                 </div>
                                 `;
