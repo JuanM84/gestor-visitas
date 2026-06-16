@@ -28,7 +28,7 @@ export const UsuarioController = {
             const usuarioSolicitante = (req as any).usuario;
 
             // Un usuario no puede desactivarse a sí mismo
-            if (usuarioSolicitante.id === id) {
+            if (String(usuarioSolicitante.id) === String(id)) {
                 return res.status(400).json({ error: 'No podés desactivar tu propia cuenta mientras tenés la sesión activa.' });
             }
 
@@ -73,7 +73,7 @@ export const UsuarioController = {
             const usuarioSolicitante = (req as any).usuario;
 
             // Solo el propio usuario o un Admin puede cambiar la contraseña
-            if (usuarioSolicitante.id !== id && usuarioSolicitante.rol !== 'Admin') {
+            if (String(usuarioSolicitante.id) !== String(id) && usuarioSolicitante.rol !== 'Admin') {
                 return res.status(403).json({ error: 'Solo podés cambiar tu propia contraseña.' });
             }
 
@@ -94,7 +94,7 @@ export const UsuarioController = {
         try {
             const { id } = req.params;
             const usuarioSolicitante = (req as any).usuario;
-            if (usuarioSolicitante.id !== id) {
+            if (String(usuarioSolicitante.id) !== String(id)) {
                 return res.status(403).json({ error: 'Solo podés ver tu propio perfil.' });
             }
             const usuario = await UsuarioService.obtenerPorId(String(id));
@@ -109,7 +109,7 @@ export const UsuarioController = {
         try {
             const { id } = req.params;
             const usuarioSolicitante = (req as any).usuario;
-            if (usuarioSolicitante.id !== id) {
+            if (String(usuarioSolicitante.id) !== String(id)) {
                 return res.status(403).json({ error: 'Solo podés editar tu propio perfil.' });
             }
             const { email, telefono } = req.body;
