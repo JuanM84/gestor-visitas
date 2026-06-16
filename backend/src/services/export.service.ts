@@ -101,7 +101,7 @@ export const ExportService = {
             JOIN Gestor g ON v.gestor_id = g.id
             JOIN Grupo gr ON v.grupo_id = gr.id
             WHERE EXTRACT(MONTH FROM v.fecha) = $1 AND EXTRACT(YEAR FROM v.fecha) = $2
-              AND v.estado != 'Cancelada'
+              AND v.estado = 'Realizada'
             ORDER BY v.fecha ASC, v.hora_inicio ASC
         `;
         const result = await pool.query(query, [mes, anio]);
@@ -354,7 +354,7 @@ export const ExportService = {
             JOIN Gestor g ON v.gestor_id = g.id
             JOIN Grupo gr ON v.grupo_id = gr.id
             WHERE v.fecha BETWEEN $1 AND $2
-              AND v.estado != 'Cancelada'
+              AND v.estado = 'Realizada'
             ORDER BY v.fecha ASC, v.hora_inicio ASC
         `;
         const result = await pool.query(query, [fechaDesde, fechaHasta]);
@@ -1108,7 +1108,7 @@ export const ExportService = {
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
                     WHERE v.fecha BETWEEN $1 AND $2
-                      AND v.estado != 'Cancelada'
+                      AND v.estado = 'Realizada'
                       AND UPPER(TRIM(COALESCE(inst.pais, gr.pais, ''))) IN ('ARGENTINA', '')
                       AND COALESCE(inst.provincia, gr.provincia) IS NOT NULL AND TRIM(COALESCE(inst.provincia, gr.provincia)) != ''
                     GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar')
@@ -1131,7 +1131,7 @@ export const ExportService = {
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
                     WHERE v.fecha BETWEEN $1 AND $2
-                      AND v.estado != 'Cancelada'
+                      AND v.estado = 'Realizada'
                       AND UPPER(TRIM(COALESCE(inst.pais, gr.pais, ''))) NOT IN ('ARGENTINA', '')
                       AND COALESCE(inst.pais, gr.pais) IS NOT NULL AND TRIM(COALESCE(inst.pais, gr.pais)) != ''
                     GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.pais, gr.pais)), ''), 'Sin especificar')
@@ -1154,7 +1154,7 @@ export const ExportService = {
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
                     WHERE v.fecha BETWEEN $1 AND $2
-                      AND v.estado != 'Cancelada'
+                      AND v.estado = 'Realizada'
                       AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%entre r%'
                       AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
                     GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
@@ -1177,7 +1177,7 @@ export const ExportService = {
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
                     WHERE v.fecha BETWEEN $1 AND $2
-                      AND v.estado != 'Cancelada'
+                      AND v.estado = 'Realizada'
                       AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%santa fe%'
                       AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
                     GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.localidad, gr.localidad)), ''), 'Sin especificar')
@@ -1197,7 +1197,7 @@ export const ExportService = {
                     FROM Visita v
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     WHERE v.fecha BETWEEN $1 AND $2
-                      AND v.estado != 'Cancelada'
+                      AND v.estado = 'Realizada'
                       AND gr.tipo_visitante = 'Institución'
                     GROUP BY COALESCE(NULLIF(TRIM(gr.nivel_educativo), ''), 'Sin especificar')
                     ORDER BY personas DESC
@@ -1216,7 +1216,7 @@ export const ExportService = {
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
                     WHERE v.fecha BETWEEN $1 AND $2
-                      AND v.estado != 'Cancelada'
+                      AND v.estado = 'Realizada'
                       AND gr.tipo_visitante = 'Institución'
                       AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%entre r%'
                       AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
@@ -1238,7 +1238,7 @@ export const ExportService = {
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
                     WHERE v.fecha BETWEEN $1 AND $2
-                      AND v.estado != 'Cancelada'
+                      AND v.estado = 'Realizada'
                       AND gr.tipo_visitante = 'Institución'
                       AND LOWER(TRIM(COALESCE(inst.provincia, gr.provincia, ''))) ILIKE '%santa fe%'
                       AND COALESCE(inst.localidad, gr.localidad) IS NOT NULL AND TRIM(COALESCE(inst.localidad, gr.localidad)) != ''
@@ -1261,7 +1261,7 @@ export const ExportService = {
                     JOIN Grupo gr ON v.grupo_id = gr.id
                     LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
                     WHERE v.fecha BETWEEN $1 AND $2
-                      AND v.estado != 'Cancelada'
+                      AND v.estado = 'Realizada'
                       AND gr.tipo_visitante = 'Institución'
                       AND v.tiene_cruce_tunel = true
                     ORDER BY v.fecha ASC, v.hora_inicio ASC
