@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
 import { VisitaService } from '../services/visita.service';
 import { esTipoVisitaValido, TIPOS_VISITA, esEstadoVisitaValido, ESTADOS_VISITA } from '../types/visita.types';
 
@@ -43,7 +44,7 @@ export const VisitaController = {
         }
     },
 
-    async crearVisita(req: Request, res: Response) {
+    async crearVisita(req: AuthRequest, res: Response) {
         try {
             const datosVisita = req.body;
 
@@ -55,7 +56,7 @@ export const VisitaController = {
                 });
             }
 
-            const nuevaVisitaId = await VisitaService.registrarNuevaVisita(datosVisita, (req as any).usuario.id);
+            const nuevaVisitaId = await VisitaService.registrarNuevaVisita(datosVisita, req.usuario.id);
 
             res.status(201).json({
                 mensaje: 'Visita registrada con éxito',
@@ -92,11 +93,11 @@ export const VisitaController = {
         }
     },
 
-    async cancelarVisita(req: Request, res: Response) {
+    async cancelarVisita(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
             const { motivo } = req.body;
-            const usuarioId = (req as any).usuario.id;
+            const usuarioId = req.usuario.id;
 
             const visita = await VisitaService.cancelarVisita(String(id), usuarioId, motivo);
             res.status(200).json({ mensaje: 'Visita cancelada exitosamente', visita });
@@ -118,11 +119,11 @@ export const VisitaController = {
         }
     },
 
-    async updateVisita(req: Request, res: Response) {
+    async updateVisita(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
             const datosAActualizar = req.body;
-            const usuarioId = (req as any).usuario.id;
+            const usuarioId = req.usuario.id;
 
             // Validación del tipo si viene en el payload
             if (datosAActualizar.tipo !== undefined && !esTipoVisitaValido(datosAActualizar.tipo)) {

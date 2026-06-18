@@ -151,8 +151,7 @@ export const VisitaService = {
                 throw new Error('El teléfono de contacto no tiene un formato válido (ej: 0343-4000000 o +54 343 4000000)');
             }
             if (!g.email) throw new Error('El email de contacto es obligatorio');
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(g.email)) {
+            if (!validarEmail(g.email)) {
                 throw new Error('El email de contacto no tiene un formato válido');
             }
             if (!g.localidad) throw new Error('La localidad es obligatoria');

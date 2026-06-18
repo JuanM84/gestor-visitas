@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
 import { ConfiguracionService } from '../services/configuracion.service';
 
 export const ConfiguracionController = {
@@ -13,14 +14,14 @@ export const ConfiguracionController = {
         }
     },
 
-    async updateParametro(req: Request, res: Response) {
+    async updateParametro(req: AuthRequest, res: Response) {
         try {
             const { clave } = req.params;
             const { valor } = req.body;
 
-            if (!valor) return res.status(400).json({ error: 'El valor es requerido' });
+            if (valor === undefined || valor === null || valor === '') return res.status(400).json({ error: 'El valor es requerido' });
 
-            const usuarioId = (req as any).usuario?.id;
+            const usuarioId = req.usuario?.id;
             const actualizado = await ConfiguracionService.actualizarValor(clave as string, valor.toString(), usuarioId);
             res.status(200).json({ mensaje: 'Configuración guardada', data: actualizado });
         } catch (error: any) {

@@ -1186,6 +1186,28 @@ export const ExportService = {
                 `;
                 const res = await pool.query(q, [fechaDesde, fechaHasta]);
                 rows = res.rows;
+            } else if (sec === 'inst_nacionales') {
+                sectionTitle = 'Instituciones Nacionales';
+                labelHeader = 'Provincia';
+                const q = `
+                    SELECT
+                        COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar') AS label,
+                        COUNT(v.id)              AS visitas,
+                        SUM(v.cantidad_personas) AS personas
+                    FROM Visita v
+                    JOIN Grupo gr ON v.grupo_id = gr.id
+                    LEFT JOIN Institucion inst ON gr.institucion_id = inst.id
+                    WHERE v.fecha BETWEEN $1 AND $2
+                      AND v.estado = 'Realizada'
+                      AND gr.tipo_visitante = 'Institución'
+                      AND UPPER(TRIM(COALESCE(inst.pais, gr.pais, ''))) IN ('ARGENTINA', '')
+                      AND COALESCE(inst.provincia, gr.provincia) IS NOT NULL AND TRIM(COALESCE(inst.provincia, gr.provincia)) != ''
+                    GROUP BY COALESCE(NULLIF(TRIM(COALESCE(inst.provincia, gr.provincia)), ''), 'Sin especificar')
+                    ORDER BY personas DESC
+                    LIMIT 15
+                `;
+                const res = await pool.query(q, [fechaDesde, fechaHasta]);
+                rows = res.rows;
             } else if (sec === 'inst_niveles') {
                 sectionTitle = 'Niveles Educativos';
                 labelHeader = 'Nivel Educativo';

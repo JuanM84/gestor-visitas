@@ -34,7 +34,7 @@ export const verificarToken = (req: AuthRequest, res: Response, next: NextFuncti
 
 export const verificarRol = (rolesPermitidos: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        const usuario = (req as any).usuario;
+        const usuario = (req as AuthRequest).usuario;
 
         if (!usuario || !rolesPermitidos.includes(usuario.rol)) {
             return res.status(403).json({

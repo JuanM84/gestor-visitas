@@ -21,7 +21,10 @@ export const EstadisticasController = {
             if (!desde || !hasta) {
                 return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta".' });
             }
-            if (desde > hasta) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(desde) || !/^\d{4}-\d{2}-\d{2}$/.test(hasta)) {
+                return res.status(400).json({ error: 'Las fechas deben tener formato YYYY-MM-DD.' });
+            }
+            if (new Date(desde + 'T00:00:00') > new Date(hasta + 'T00:00:00')) {
                 return res.status(400).json({ error: 'La fecha "desde" debe ser anterior o igual a "hasta".' });
             }
             const stats = await EstadisticasService.getStatsByRango(desde, hasta);

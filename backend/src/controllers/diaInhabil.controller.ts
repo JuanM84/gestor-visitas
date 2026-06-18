@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
 import { DiaInhabilService } from '../services/diaInhabil.service';
 
 export const DiaInhabilController = {
@@ -11,13 +12,13 @@ export const DiaInhabilController = {
         }
     },
 
-    async addDia(req: Request, res: Response) {
+    async addDia(req: AuthRequest, res: Response) {
         try {
             const { fecha, descripcion } = req.body;
             if (!fecha || !descripcion) {
                 return res.status(400).json({ error: 'La fecha y descripción son obligatorias' });
             }
-            const usuarioId = (req as any).usuario?.id;
+            const usuarioId = req.usuario?.id;
             const nuevoDia = await DiaInhabilService.agregar(fecha, descripcion, usuarioId);
             res.status(201).json(nuevoDia);
         } catch (error: any) {
@@ -27,10 +28,10 @@ export const DiaInhabilController = {
         }
     },
 
-    async deleteDia(req: Request, res: Response) {
+    async deleteDia(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const usuarioId = (req as any).usuario?.id;
+            const usuarioId = req.usuario?.id;
             await DiaInhabilService.eliminar(String(id), usuarioId);
             res.status(204).send();
         } catch (error) {

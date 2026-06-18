@@ -1,5 +1,6 @@
 import { pool } from '../config/db';
 import bcrypt from 'bcryptjs';
+import { validarEmail, validarPassword } from '../utils/validators';
 
 export const UsuarioService = {
     async obtenerTodos() {
@@ -24,8 +25,7 @@ export const UsuarioService = {
     // Actualizar perfil propio (email, teléfono)
     async actualizarPerfil(id: string, datos: { email?: string; telefono?: string }, usuarioId?: string) {
         if (datos.email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(datos.email)) {
+            if (!validarEmail(datos.email)) {
                 throw new Error('El formato del correo electrónico es inválido');
             }
             // Validar que el email no esté en uso por otro usuario
@@ -75,19 +75,14 @@ export const UsuarioService = {
             throw new Error(`Rol inválido. Los valores permitidos son: ${ROLES_VALIDOS.join(', ')}`);
         }
 
-        // Validar email obligatorio y formato
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!datos.email || !emailRegex.test(datos.email)) {
+        if (!datos.email || !validarEmail(datos.email)) {
             throw new Error('El formato del correo electrónico es inválido');
         }
 
         // U-4 / U-6: Validar política de contraseña
-        if (!datos.password || datos.password.length < 8) {
-            throw new Error('La contraseña debe tener al menos 8 caracteres');
-        }
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-        if (!passwordRegex.test(datos.password)) {
-            throw new Error('La contraseña debe tener al menos una mayúscula, una minúscula y un número');
+        const passwordResult = validarPassword(datos.password);
+        if (!passwordResult.valida) {
+            throw new Error(passwordResult.mensaje);
         }
 
         const existe = await pool.query('SELECT id FROM Usuario WHERE email = $1', [datos.email]);
@@ -210,8 +205,7 @@ export const UsuarioService = {
             throw new Error(`Rol inválido. Los valores permitidos son: ${ROLES_VALIDOS.join(', ')}`);
         }
         if (datos.email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(datos.email)) {
+            if (!validarEmail(datos.email)) {
                 throw new Error('El formato del correo electrónico es inválido');
             }
             const existe = await pool.query(
@@ -271,12 +265,9 @@ export const UsuarioService = {
         const esValida = await bcrypt.compare(passwordActual, usuario.password_hash);
         if (!esValida) throw new Error('La contraseña actual es incorrecta');
 
-        if (nuevaPassword.length < 8) {
-            throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
-        }
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-        if (!passwordRegex.test(nuevaPassword)) {
-            throw new Error('La nueva contraseña debe tener al menos una mayúscula, una minúscula y un número');
+        const passwordResult = validarPassword(nuevaPassword);
+        if (!passwordResult.valida) {
+            throw new Error(passwordResult.mensaje);
         }
         if (nuevaPassword === passwordActual) {
             throw new Error('La nueva contraseña debe ser diferente a la actual');

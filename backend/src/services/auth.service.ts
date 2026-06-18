@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { AuthRepository } from '../repositories/auth.repository';
-import { pool } from '../config/db';
 
 export const AuthService = {
     async login(email: string, passwordPlana: string) {
@@ -31,7 +30,7 @@ export const AuthService = {
         const token = jwt.sign(
             { id: usuario.id, rol: usuario.rol, nombre: usuario.nombre },
             secret,
-            { expiresIn: '8h' } // El token dura una jornada laboral
+            { expiresIn: (process.env.JWT_EXPIRY || '24h') as any }
         );
 
         return {

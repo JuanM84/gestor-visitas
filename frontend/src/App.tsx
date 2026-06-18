@@ -56,12 +56,12 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/configuraciones" element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={['Admin']}>
             <MainLayout><Configuraciones /></MainLayout>
           </ProtectedRoute>
         } />
         <Route path="/usuarios" element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={['Admin']}>
             <MainLayout><GestionUsuarios /></MainLayout>
           </ProtectedRoute>
         } />
@@ -76,7 +76,7 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/informes" element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={['Admin']}>
             <MainLayout><Informes /></MainLayout>
           </ProtectedRoute>
         } />
@@ -86,7 +86,7 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/auditoria" element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={['Admin']}>
             <MainLayout><Auditoria /></MainLayout>
           </ProtectedRoute>
         } />

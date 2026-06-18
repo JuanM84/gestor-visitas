@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
 import { InstitucionService } from '../services/institucion.service';
 
 export const InstitucionController = {
@@ -12,9 +13,9 @@ export const InstitucionController = {
         }
     },
 
-    async createInstitucion(req: Request, res: Response) {
+    async createInstitucion(req: AuthRequest, res: Response) {
         try {
-            const usuarioId = (req as any).usuario?.id;
+            const usuarioId = req.usuario?.id;
             const nueva = await InstitucionService.crearInstitucion(req.body, usuarioId);
             res.status(201).json({ mensaje: 'Institución creada exitosamente', institucion: nueva });
         } catch (error: any) {

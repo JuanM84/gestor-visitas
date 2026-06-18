@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { UsuarioService } from '../services/usuario.service';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 export const UsuarioController = {
     async getUsuarios(req: Request, res: Response) {
@@ -11,9 +12,9 @@ export const UsuarioController = {
         }
     },
 
-    async crearUsuario(req: Request, res: Response) {
+    async crearUsuario(req: AuthRequest, res: Response) {
         try {
-            const usuarioId = (req as any).usuario?.id;
+            const usuarioId = req.usuario?.id;
             const nuevoUsuario = await UsuarioService.crearUsuario(req.body, usuarioId);
             res.status(201).json({ mensaje: 'Usuario creado exitosamente', usuario: nuevoUsuario });
         } catch (error: any) {
@@ -22,10 +23,10 @@ export const UsuarioController = {
     },
 
     // U-8: Desactivar usuario (soft-delete con protección del último Admin)
-    async desactivarUsuario(req: Request, res: Response) {
+    async desactivarUsuario(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const usuarioSolicitante = (req as any).usuario;
+            const usuarioSolicitante = req.usuario;
 
             // Un usuario no puede desactivarse a sí mismo
             if (String(usuarioSolicitante.id) === String(id)) {
@@ -41,10 +42,10 @@ export const UsuarioController = {
     },
 
     // Reactivar usuario (solo Admin)
-    async reactivarUsuario(req: Request, res: Response) {
+    async reactivarUsuario(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const usuarioSolicitante = (req as any).usuario;
+            const usuarioSolicitante = req.usuario;
             const usuario = await UsuarioService.reactivarUsuario(String(id), usuarioSolicitante.id);
             res.status(200).json({ mensaje: `Usuario "${usuario.nombre}" reactivado correctamente`, usuario });
         } catch (error: any) {
@@ -54,11 +55,11 @@ export const UsuarioController = {
     },
 
     // Actualizar datos de usuario (Admin)
-    async actualizarDatos(req: Request, res: Response) {
+    async actualizarDatos(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
             const { nombre, email, telefono, rol } = req.body;
-            const usuarioSolicitante = (req as any).usuario;
+            const usuarioSolicitante = req.usuario;
             const usuario = await UsuarioService.actualizarDatos(String(id), { nombre, email, telefono, rol }, usuarioSolicitante.id);
             res.status(200).json({ mensaje: 'Usuario actualizado correctamente.', usuario });
         } catch (error: any) {
@@ -67,10 +68,10 @@ export const UsuarioController = {
     },
 
     // A-9: Cambiar contraseña propia
-    async cambiarPassword(req: Request, res: Response) {
+    async cambiarPassword(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const usuarioSolicitante = (req as any).usuario;
+            const usuarioSolicitante = req.usuario;
 
             // Solo el propio usuario o un Admin puede cambiar la contraseña
             if (String(usuarioSolicitante.id) !== String(id) && usuarioSolicitante.rol !== 'Admin') {
@@ -90,11 +91,11 @@ export const UsuarioController = {
     },
 
     // Obtener perfil propio
-    async obtenerPerfil(req: Request, res: Response) {
+    async obtenerPerfil(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const usuarioSolicitante = (req as any).usuario;
-            if (String(usuarioSolicitante.id) !== String(id)) {
+            const usuarioSolicitante = req.usuario;
+            if (String(usuarioSolicitante.id) !== String(id) && usuarioSolicitante.rol !== 'Admin') {
                 return res.status(403).json({ error: 'Solo podés ver tu propio perfil.' });
             }
             const usuario = await UsuarioService.obtenerPorId(String(id));
@@ -105,10 +106,10 @@ export const UsuarioController = {
     },
 
     // Actualizar perfil propio (email, teléfono)
-    async actualizarPerfil(req: Request, res: Response) {
+    async actualizarPerfil(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const usuarioSolicitante = (req as any).usuario;
+            const usuarioSolicitante = req.usuario;
             if (String(usuarioSolicitante.id) !== String(id)) {
                 return res.status(403).json({ error: 'Solo podés editar tu propio perfil.' });
             }

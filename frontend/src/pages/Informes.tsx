@@ -24,6 +24,7 @@ export const Informes = () => {
         extranjeros: false,
         entrerios: false,
         santafe: false,
+        inst_nacionales: false,
         inst_niveles: true,
         inst_entrerios: false,
         inst_santafe: false,
@@ -50,7 +51,7 @@ export const Informes = () => {
 
         const activeKeys = activeTab === 'geograficas'
             ? ['nacionales', 'extranjeros', 'entrerios', 'santafe']
-            : ['inst_niveles', 'inst_entrerios', 'inst_santafe', 'inst_cruces'];
+            : ['inst_nacionales', 'inst_niveles', 'inst_entrerios', 'inst_santafe', 'inst_cruces'];
 
         const activeSecciones = Object.entries(secciones)
             .filter(([key, val]) => val && activeKeys.includes(key))
@@ -129,7 +130,7 @@ export const Informes = () => {
 
     const activeKeys = activeTab === 'geograficas'
         ? ['nacionales', 'extranjeros', 'entrerios', 'santafe']
-        : ['inst_niveles', 'inst_entrerios', 'inst_santafe', 'inst_cruces'];
+        : ['inst_nacionales', 'inst_niveles', 'inst_entrerios', 'inst_santafe', 'inst_cruces'];
 
     const noSeccionesSelected = Object.entries(secciones)
         .filter(([key, val]) => val && activeKeys.includes(key))
@@ -374,6 +375,36 @@ export const Informes = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Instituciones Nacionales */}
+                            <label className={cn(
+                                "flex flex-col gap-3 p-5 rounded-2xl border cursor-pointer transition-all hover:shadow-sm",
+                                secciones.inst_nacionales
+                                    ? "border-primary bg-primary/5 text-primary"
+                                    : "border-slate-200 bg-white text-slate-700 hover:border-primary/40"
+                            )}>
+                                <input
+                                    type="checkbox"
+                                    checked={secciones.inst_nacionales}
+                                    onChange={() => setSecciones({ ...secciones, inst_nacionales: !secciones.inst_nacionales })}
+                                    className="hidden"
+                                />
+                                <div className="flex items-center justify-between">
+                                    <span className={cn(
+                                        "material-symbols-outlined text-3xl",
+                                        secciones.inst_nacionales ? "text-primary" : "text-slate-400"
+                                    )}>public</span>
+                                    {secciones.inst_nacionales && (
+                                        <span className="material-symbols-outlined text-primary text-[22px]">check_circle</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="font-bold text-sm">Instituciones Nacionales</p>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Detalla los visitantes de instituciones agrupados por las provincias argentinas de origen.
+                                    </p>
+                                </div>
+                            </label>
+
                             {/* Niveles Educativos */}
                             <label className={cn(
                                 "flex flex-col gap-3 p-5 rounded-2xl border cursor-pointer transition-all hover:shadow-sm",

@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
 import { ExportService } from '../services/export.service';
 
 export const ExportController = {
-    async exportarMensual(req: Request, res: Response) {
+    async exportarMensual(req: AuthRequest, res: Response) {
         try {
             const anio = parseInt(req.query.anio as string) || new Date().getFullYear();
             const mes = parseInt(req.query.mes as string) || (new Date().getMonth() + 1);
-            const usuarioNombre = (req as any).usuario?.nombre || 'Sistema';
+            const usuarioNombre = req.usuario?.nombre || 'Sistema';
 
             const pdfBuffer = await ExportService.generarReporteMensualPDF(mes, anio, usuarioNombre);
 
@@ -22,10 +23,10 @@ export const ExportController = {
         }
     },
 
-    async exportarDiario(req: Request, res: Response) {
+    async exportarDiario(req: AuthRequest, res: Response) {
         try {
             const fecha = req.query.fecha as string;
-            const usuarioNombre = (req as any).usuario?.nombre || 'Sistema';
+            const usuarioNombre = req.usuario?.nombre || 'Sistema';
 
             if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
                 return res.status(400).json({ error: 'El parámetro fecha es requerido en formato YYYY-MM-DD' });
@@ -45,11 +46,11 @@ export const ExportController = {
         }
     },
 
-    async exportarRango(req: Request, res: Response) {
+    async exportarRango(req: AuthRequest, res: Response) {
         try {
             const fechaDesde = req.query.desde as string;
             const fechaHasta = req.query.hasta as string;
-            const usuarioNombre = (req as any).usuario?.nombre || 'Sistema';
+            const usuarioNombre = req.usuario?.nombre || 'Sistema';
 
             if (!fechaDesde || !fechaHasta || !/^\d{4}-\d{2}-\d{2}$/.test(fechaDesde) || !/^\d{4}-\d{2}-\d{2}$/.test(fechaHasta)) {
                 return res.status(400).json({ error: 'Los parámetros desde y hasta son requeridos en formato YYYY-MM-DD' });
@@ -69,10 +70,10 @@ export const ExportController = {
         }
     },
 
-    async exportarComprobanteVisita(req: Request, res: Response) {
+    async exportarComprobanteVisita(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const usuarioNombre = (req as any).usuario?.nombre || 'Sistema';
+            const usuarioNombre = req.usuario?.nombre || 'Sistema';
             
             if (!id) {
                 return res.status(400).json({ error: 'El ID de la visita es requerido' });
@@ -91,13 +92,13 @@ export const ExportController = {
         }
     },
 
-    async exportarInformeStats(req: Request, res: Response) {
+    async exportarInformeStats(req: AuthRequest, res: Response) {
         try {
             const fechaDesde = req.query.desde as string;
             const fechaHasta = req.query.hasta as string;
             const titulo = req.query.titulo as string || '';
             const seccionesRaw = req.query.secciones as string || '';
-            const usuarioNombre = (req as any).usuario?.nombre || 'Sistema';
+            const usuarioNombre = req.usuario?.nombre || 'Sistema';
 
             if (!fechaDesde || !fechaHasta || !/^\d{4}-\d{2}-\d{2}$/.test(fechaDesde) || !/^\d{4}-\d{2}-\d{2}$/.test(fechaHasta)) {
                 return res.status(400).json({ error: 'Los parámetros desde y hasta son requeridos en formato YYYY-MM-DD' });
