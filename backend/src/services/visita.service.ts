@@ -142,7 +142,7 @@ export const VisitaService = {
         if (tipoVisitante === 'Particulares') {
             const g = datos.grupo as GrupoParticularesDto;
             if (!g.tipo_grupo || !TIPOS_GRUPO.includes(g.tipo_grupo)) {
-                throw new Error('El tipo de grupo debe ser "Menores" o "Adultos"');
+                throw new Error(`El tipo de grupo es inválido. Valores permitidos: ${TIPOS_GRUPO.join(', ')}`);
             }
             if (!g.nombre) throw new Error('El nombre del grupo es obligatorio para particulares');
             if (!g.telefono) throw new Error('El teléfono de contacto es obligatorio');

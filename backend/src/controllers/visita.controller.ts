@@ -1,16 +1,12 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { VisitaService } from '../services/visita.service';
-import { esTipoVisitaValido, TIPOS_VISITA, esEstadoVisitaValido, ESTADOS_VISITA } from '../types/visita.types';
+import { esEstadoVisitaValido, ESTADOS_VISITA } from '../types/visita.types';
 
 export const VisitaController = {
     async getVisitasDashboard(req: Request, res: Response) {
         try {
             const fecha = req.query.fecha as string || new Date().toISOString().split('T')[0];
-
-            if (!fecha) {
-                return res.status(400).json({ error: 'El parámetro fecha es requerido' });
-            }
 
             const visitas = await VisitaService.obtenerVisitasDelDia(fecha);
 
@@ -47,14 +43,6 @@ export const VisitaController = {
     async crearVisita(req: AuthRequest, res: Response) {
         try {
             const datosVisita = req.body;
-
-            // Validación temprana del tipo de visita
-            const tipo = datosVisita?.visita?.tipo;
-            if (!tipo || !esTipoVisitaValido(tipo)) {
-                return res.status(400).json({
-                    error: `El tipo de visita es inválido o está ausente. Valores permitidos: ${TIPOS_VISITA.join(', ')}`
-                });
-            }
 
             const nuevaVisitaId = await VisitaService.registrarNuevaVisita(datosVisita, req.usuario.id);
 
@@ -124,13 +112,6 @@ export const VisitaController = {
             const { id } = req.params;
             const datosAActualizar = req.body;
             const usuarioId = req.usuario.id;
-
-            // Validación del tipo si viene en el payload
-            if (datosAActualizar.tipo !== undefined && !esTipoVisitaValido(datosAActualizar.tipo)) {
-                return res.status(400).json({
-                    error: `Tipo de visita inválido. Valores permitidos: ${TIPOS_VISITA.join(', ')}`
-                });
-            }
 
             // Validación del estado si viene en el payload
             if (datosAActualizar.estado !== undefined && !esEstadoVisitaValido(datosAActualizar.estado)) {

@@ -7,12 +7,12 @@ import { ModalMiPerfil } from "../ui/ModalMiPerfil";
 const navItems = [
     { name: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
     { name: 'Calendario', icon: 'calendar_today', path: '/calendario' },
-    { name: 'Auditoria', icon: 'confirmation_number', path: '/auditoria', roles: ['Admin'] },
     { name: 'Gestores', icon: 'groups', path: '/gestores' },
     { name: 'Listado', icon: 'print', path: '/listado' },
     { name: 'Estadísticas', icon: 'analytics', path: '/estadisticas' },
     { name: 'Informes', icon: 'description', path: '/informes', roles: ['Admin'] },
     { name: 'Usuarios', icon: 'manage_accounts', path: '/usuarios', roles: ['Admin'] },
+    { name: 'Auditoria', icon: 'policy', path: '/auditoria', roles: ['Admin'] },
     { name: 'Configuraciones', icon: 'settings', path: '/configuraciones', roles: ['Admin'] },
 ];
 
@@ -64,7 +64,7 @@ export const Sidebar = ({ abierto, onCerrar }: SidebarProps) => {
             )}>
                 <div className="px-6 mb-8 flex items-center justify-between">
                     <div>
-                        <h1 className="font-black text-primary text-lg">Tunnel Subfluvial</h1>
+                        <h1 className="font-black text-primary text-lg">Túnel Subfluvial</h1>
                         <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider">Gestión de Visitas</p>
                     </div>
                     {/* Botón cerrar visible solo en móvil */}

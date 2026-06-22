@@ -1,18 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { cn } from '../utils/cn';
 
 export const Informes = () => {
-    const { usuario, token } = useAuth();
-    const navigate = useNavigate();
-
-    // Redirección si no es admin
-    useEffect(() => {
-        if (usuario && usuario.rol !== 'Admin') {
-            navigate('/dashboard');
-        }
-    }, [usuario, navigate]);
+    const { token } = useAuth();
 
     const [titulo, setTitulo] = useState('');
     const [fechaDesde, setFechaDesde] = useState('');

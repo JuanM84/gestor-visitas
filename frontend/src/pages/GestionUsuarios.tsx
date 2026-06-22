@@ -18,8 +18,17 @@ const Modal = ({ titulo, onClose, children }: { titulo: string; onClose: () => v
     </div>
 );
 
+interface Usuario {
+    id: number;
+    nombre: string;
+    email: string;
+    telefono?: string;
+    rol: string;
+    activo: boolean;
+}
+
 export const GestionUsuarios = () => {
-    const [usuarios, setUsuarios] = useState<any[]>([]);
+    const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [loading, setLoading] = useState(true);
     const [errorLista, setErrorLista] = useState<string | null>(null);
     const [mensajeGlobal, setMensajeGlobal] = useState({ tipo: '', texto: '' });

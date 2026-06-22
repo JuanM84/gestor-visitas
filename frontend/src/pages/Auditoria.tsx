@@ -2,10 +2,23 @@ import { useState, useEffect } from 'react';
 import { cn } from '../utils/cn';
 import { useAuth } from '../context/AuthContext';
 
+interface LogAuditoria {
+    id: number;
+    fecha: string;
+    usuario_email: string;
+    usuario_rol: string;
+    accion: string;
+}
+
 export const Auditoria = () => {
-    const [logs, setLogs] = useState<any[]>([]);
+    const [logs, setLogs] = useState<LogAuditoria[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Filtros
+    const [filtroFecha, setFiltroFecha] = useState('');
+    const [filtroEmail, setFiltroEmail] = useState('');
+    const [filtroAccion, setFiltroAccion] = useState('');
 
     const { token } = useAuth();
 
@@ -31,12 +44,42 @@ export const Auditoria = () => {
         };
 
         fetchLogs();
-    }, []);
+    }, [token]);
 
     const formatFecha = (fechaStr: string) => {
         const d = new Date(fechaStr);
         return `${d.toLocaleDateString('es-AR')} - ${d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`;
     };
+
+    const getLocalDateString = (fechaStr: string) => {
+        const d = new Date(fechaStr);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const logsFiltrados = logs.filter(log => {
+        if (filtroFecha) {
+            const logLocalDate = getLocalDateString(log.fecha);
+            if (logLocalDate !== filtroFecha) {
+                return false;
+            }
+        }
+        if (filtroEmail) {
+            const email = (log.usuario_email || 'sistema').toLowerCase();
+            if (!email.includes(filtroEmail.toLowerCase())) {
+                return false;
+            }
+        }
+        if (filtroAccion) {
+            const accion = log.accion.toLowerCase();
+            if (!accion.includes(filtroAccion.toLowerCase())) {
+                return false;
+            }
+        }
+        return true;
+    });
 
     return (
         <div className="flex flex-col max-w-[1200px] w-full mx-auto pb-12">
@@ -52,11 +95,99 @@ export const Auditoria = () => {
                 </p>
             </div>
 
+            {/* Barra de Filtros */}
+            <div className="bg-white rounded-3xl p-6 border border-outline-variant shadow-sm mb-6">
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                    <div className="flex-1 w-full">
+                        <label className="block text-xs font-bold uppercase text-outline mb-1.5">Fecha</label>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">calendar_month</span>
+                            <input
+                                type="date"
+                                className="w-full h-11 pl-10 pr-8 rounded-xl border border-outline-variant bg-surface-bright text-on-background text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                value={filtroFecha}
+                                onChange={(e) => setFiltroFecha(e.target.value)}
+                            />
+                            {filtroFecha && (
+                                <button
+                                    onClick={() => setFiltroFecha('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-background transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">close</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex-1 w-full">
+                        <label className="block text-xs font-bold uppercase text-outline mb-1.5">Email de Usuario</label>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">mail</span>
+                            <input
+                                type="text"
+                                placeholder="Buscar por email..."
+                                className="w-full h-11 pl-10 pr-8 rounded-xl border border-outline-variant bg-surface-bright text-on-background text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                value={filtroEmail}
+                                onChange={(e) => setFiltroEmail(e.target.value)}
+                            />
+                            {filtroEmail && (
+                                <button
+                                    onClick={() => setFiltroEmail('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-background transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">close</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex-[2] w-full">
+                        <label className="block text-xs font-bold uppercase text-outline mb-1.5">Acción Realizada</label>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">search</span>
+                            <input
+                                type="text"
+                                placeholder="Buscar por palabra clave..."
+                                className="w-full h-11 pl-10 pr-8 rounded-xl border border-outline-variant bg-surface-bright text-on-background text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                value={filtroAccion}
+                                onChange={(e) => setFiltroAccion(e.target.value)}
+                            />
+                            {filtroAccion && (
+                                <button
+                                    onClick={() => setFiltroAccion('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-background transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">close</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {(filtroFecha || filtroEmail || filtroAccion) && (
+                        <button
+                            onClick={() => {
+                                setFiltroFecha('');
+                                setFiltroEmail('');
+                                setFiltroAccion('');
+                            }}
+                            className="h-11 px-4 text-sm font-bold text-error border border-error-container rounded-xl hover:bg-error-container/20 transition-all flex items-center justify-center gap-1 shrink-0 w-full md:w-auto"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">filter_alt_off</span>
+                            Limpiar
+                        </button>
+                    )}
+                </div>
+            </div>
+
             {/* Contenedor de la Tabla */}
             <div className="bg-white rounded-3xl border border-outline-variant shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-surface-container flex justify-between items-center bg-surface-container-lowest">
                     <h3 className="font-h3 text-on-surface">Historial de Acciones</h3>
-                    <span className="text-xs font-bold uppercase text-outline tracking-wider">Últimos {logs.length} registros</span>
+                    <span className="text-xs font-bold uppercase text-outline tracking-wider">
+                        {logsFiltrados.length === logs.length 
+                            ? `Últimos ${logs.length} registros` 
+                            : `Mostrando ${logsFiltrados.length} de ${logs.length} registros`}
+                    </span>
                 </div>
 
                 {loading ? (
@@ -65,6 +196,8 @@ export const Auditoria = () => {
                     <div className="p-10 text-center text-error font-bold">{error}</div>
                 ) : logs.length === 0 ? (
                     <div className="p-10 text-center text-outline">No hay registros de auditoría disponibles.</div>
+                ) : logsFiltrados.length === 0 ? (
+                    <div className="p-10 text-center text-on-surface-variant">No se encontraron registros de auditoría que coincidan con los filtros.</div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
@@ -77,7 +210,7 @@ export const Auditoria = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-surface-container text-sm">
-                                {logs.map((log) => (
+                                {logsFiltrados.map((log) => (
                                     <tr key={log.id} className="hover:bg-surface-container-low/50 transition-colors">
                                         <td className="p-4 text-on-surface font-medium whitespace-nowrap">
                                             {formatFecha(log.fecha)}

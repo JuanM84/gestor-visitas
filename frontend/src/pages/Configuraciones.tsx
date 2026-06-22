@@ -14,7 +14,12 @@ export const Configuraciones = () => {
     const [mensajeTimeout, setMensajeTimeout] = useState({ tipo: '', texto: '' });
 
     // --- Estados para Días Inhábiles ---
-    const [dias, setDias] = useState<any[]>([]);
+    interface DiaInhabil {
+        id: number;
+        fecha: string;
+        descripcion: string;
+    }
+    const [dias, setDias] = useState<DiaInhabil[]>([]);
     const [fecha, setFecha] = useState('');
     const [descripcion, setDescripcion] = useState('');
     const [loadingDias, setLoadingDias] = useState(false);
@@ -158,7 +163,7 @@ export const Configuraciones = () => {
         }
     };
 
-    const handleEliminarDia = async (id: string) => {
+    const handleEliminarDia = async (id: number | string) => {
         if (!confirm('¿Seguro que desea habilitar nuevamente este día?')) return;
 
         try {
