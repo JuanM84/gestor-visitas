@@ -248,10 +248,6 @@ const StatsBlocks = ({ stats, etiquetaPeriodo }: { stats: any; etiquetaPeriodo: 
                         <div className="text-center text-outline py-10">Sin datos de origen en este período.</div>
                     ) : (() => {
                         const totalOrigen = stats.origenVisitantes.reduce((acc: number, o: any) => acc + parseInt(o.total_personas), 0);
-                        const coloresOrigen: Record<string, { bg: string; text: string; ring: string }> = {
-                            'Argentina':    { bg: '#3B82F6', text: 'text-blue-500',   ring: 'bg-blue-500' },
-                            'Extranjeros':  { bg: '#F59E0B', text: 'text-amber-500',  ring: 'bg-amber-500' },
-                        };
                         // Calcular segmentos para SVG donut
                         let acum = 0;
                         const radio = 60, cx = 80, cy = 80, grosor = 28;
@@ -429,7 +425,11 @@ export const DashboardAdmin = () => {
         else { setMesActual(mesActual + 1); }
     };
 
+    const [exportandoRango, setExportandoRango] = useState(false);
+    const [exportandoMensual, setExportandoMensual] = useState(false);
+
     const handleExportar = async () => {
+        setExportandoMensual(true);
         try {
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/estadisticas/exportar?mes=${mesActual}&anio=${anioActual}`,
@@ -445,6 +445,31 @@ export const DashboardAdmin = () => {
             URL.revokeObjectURL(url);
         } catch (err) {
             console.error('Error exportando:', err);
+        } finally {
+            setExportandoMensual(false);
+        }
+    };
+
+    const handleExportarRango = async () => {
+        if (!rangoDesde || !rangoHasta) return;
+        setExportandoRango(true);
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/estadisticas/exportar/rango?desde=${rangoDesde}&hasta=${rangoHasta}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            if (!response.ok) throw new Error('Error al generar el reporte por rango');
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte_${rangoDesde}_a_${rangoHasta}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error exportando rango:', err);
+        } finally {
+            setExportandoRango(false);
         }
     };
 
@@ -581,13 +606,26 @@ export const DashboardAdmin = () => {
                             )}
                             {statsRango && !loadingRango && (
                                 <div>
-                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-outline-variant">
-                                        <span className="material-symbols-outlined text-primary">calendar_month</span>
-                                        <p className="font-bold text-on-surface">
-                                            Período: <span className="text-primary">{formatFechaLabel(rangoDesde)}</span>
-                                            <span className="mx-2 text-outline">→</span>
-                                            <span className="text-primary">{formatFechaLabel(rangoHasta)}</span>
-                                        </p>
+                                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-outline-variant">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-primary">calendar_month</span>
+                                            <p className="font-bold text-on-surface">
+                                                Período: <span className="text-primary">{formatFechaLabel(rangoDesde)}</span>
+                                                <span className="mx-2 text-outline">→</span>
+                                                <span className="text-primary">{formatFechaLabel(rangoHasta)}</span>
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleExportarRango}
+                                            disabled={exportandoRango}
+                                            className="flex items-center gap-2 px-4 py-2 border border-outline-variant bg-white hover:bg-surface-container hover:border-primary/40 text-on-surface-variant hover:text-primary rounded-xl font-bold transition-all shadow-sm text-xs disabled:opacity-50"
+                                        >
+                                            <span className={`material-symbols-outlined text-[16px] ${exportandoRango ? 'animate-spin' : ''}`}>
+                                                {exportandoRango ? 'progress_activity' : 'print'}
+                                            </span>
+                                            {exportandoRango ? 'Exportando...' : 'Exportar PDF'}
+                                        </button>
                                     </div>
                                     <StatsBlocks
                                         stats={statsRango}
@@ -607,6 +645,18 @@ export const DashboardAdmin = () => {
                     <p className="font-body-md text-on-surface-variant">Indicadores clave de rendimiento (KPIs) y analíticas del sistema.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleExportar}
+                        disabled={exportandoMensual}
+                        className="flex items-center gap-2 px-4 py-2 border border-outline-variant bg-white hover:bg-surface-container hover:border-primary/40 text-on-surface-variant hover:text-primary rounded-xl font-bold transition-all shadow-sm disabled:opacity-50"
+                        title="Exportar reporte mensual PDF"
+                    >
+                        <span className={`material-symbols-outlined text-[18px] ${exportandoMensual ? 'animate-spin' : ''}`}>
+                            {exportandoMensual ? 'progress_activity' : 'print'}
+                        </span>
+                        {exportandoMensual ? 'Exportando...' : 'Exportar Mensual'}
+                    </button>
+
                     <button
                         onClick={() => setModalRango(true)}
                         className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all shadow-sm"

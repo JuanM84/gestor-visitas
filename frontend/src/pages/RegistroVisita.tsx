@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { TIPOS_VISITA } from '../utils/visitaTypes';
+import type { Gestor, Institucion } from '../utils/visitaTypes';
 import { cn } from '../utils/cn';
 import { useAuth } from '../context/AuthContext';
 import { UbicacionSelector } from '../components/ui/UbicacionSelector';
@@ -27,6 +28,54 @@ const Modal = ({ titulo, onClose, children }: { titulo: string; onClose: () => v
 );
 
 // ──────────────────────────────────────────
+interface PayloadVisita {
+    gestor_id: string | null;
+    nuevoGestor: {
+        nombre: string;
+        tipo: string;
+        empresa_institucion: string;
+        telefono: string;
+        email: string;
+        localidad: string;
+        provincia: string;
+        pais: string;
+    } | null;
+    grupo: {
+        tipo_visitante: 'Institución';
+        institucion_id: string | null;
+        nuevaInstitucion: {
+            nombre: string;
+            telefono: string;
+            email: string;
+            localidad: string;
+            provincia: string;
+            pais: string;
+        } | null;
+        nivel_educativo: string;
+        observaciones: string;
+    } | {
+        tipo_visitante: 'Particulares';
+        nombre: string;
+        tipo_grupo: string;
+        telefono: string;
+        email: string;
+        localidad: string;
+        provincia: string;
+        pais: string;
+        observaciones: string;
+    };
+    visita: {
+        fecha: string;
+        hora_inicio: string;
+        tipo: string;
+        tiene_cruce_tunel: boolean;
+        cantidad_personas: string | number;
+        tiene_discapacidad: boolean;
+        discapacidad_detalle: string;
+    };
+}
+
+// ──────────────────────────────────────────
 // Componente principal
 // ──────────────────────────────────────────
 export const RegistroVisita = () => {
@@ -37,15 +86,15 @@ export const RegistroVisita = () => {
     const horaInicial = searchParams.get('hora') || '';
 
     // Catálogos
-    const [gestores, setGestores] = useState<any[]>([]);
-    const [instituciones, setInstituciones] = useState<any[]>([]);
+    const [gestores, setGestores] = useState<Gestor[]>([]);
+    const [instituciones, setInstituciones] = useState<Institucion[]>([]);
 
     // UI modales
     const [modalGestor, setModalGestor] = useState(false);
     const [modalInstitucion, setModalInstitucion] = useState(false);
     const [modalConfirmar, setModalConfirmar] = useState(false);
     const [enviando, setEnviando] = useState(false);
-    const [payloadPendiente, setPayloadPendiente] = useState<any>(null);
+    const [payloadPendiente, setPayloadPendiente] = useState<PayloadVisita | null>(null);
 
     // Error
     const [errorSubmit, setErrorSubmit] = useState<string | null>(null);
@@ -188,7 +237,7 @@ export const RegistroVisita = () => {
             ? 'Mixto'
             : particulares.tipoMenores ? 'Menores' : 'Adultos';
 
-        const payload = {
+        const payload: PayloadVisita = {
             gestor_id: gestor_id || null,
             nuevoGestor: gestor_id ? null : nuevoGestor,
             grupo: tipoVisitante === 'Institución'
@@ -258,8 +307,8 @@ export const RegistroVisita = () => {
     const inp = "w-full h-10 px-3 rounded-lg border border-outline-variant bg-white outline-none focus:border-primary transition-all text-sm";
     const sectionCls = "bg-surface-container-low p-6 rounded-xl border border-surface-container space-y-4";
 
-    const gestorSeleccionado = gestores.find(g => g.id === gestor_id);
-    const institucionSeleccionada = instituciones.find(i => i.id === institucion_id);
+    const gestorSeleccionado = gestores.find(g => String(g.id) === gestor_id);
+    const institucionSeleccionada = instituciones.find(i => String(i.id) === institucion_id);
 
     // Filtrar gestores según búsqueda
     const gestoresFiltrados = gestores.filter(g =>
@@ -268,9 +317,10 @@ export const RegistroVisita = () => {
         (g.tipo && g.tipo.toLowerCase().includes(busquedaGestor.toLowerCase()))
     );
 
-    const manejarSeleccionarGestor = (id: string) => {
-        setGestorId(id);
-        const gestor = gestores.find(g => g.id === id);
+    const manejarSeleccionarGestor = (id: string | number) => {
+        const idStr = String(id);
+        setGestorId(idStr);
+        const gestor = gestores.find(g => String(g.id) === idStr);
         setBusquedaGestor(gestor?.nombre || '');
         setMostrarDropdownGestor(false);
     };
@@ -282,9 +332,10 @@ export const RegistroVisita = () => {
         (i.provincia && i.provincia.toLowerCase().includes(busquedaInstitucion.toLowerCase()))
     );
 
-    const manejarSeleccionarInstitucion = (id: string) => {
-        setInstitucionId(id);
-        const institucion = instituciones.find(i => i.id === id);
+    const manejarSeleccionarInstitucion = (id: string | number) => {
+        const idStr = String(id);
+        setInstitucionId(idStr);
+        const institucion = instituciones.find(i => String(i.id) === idStr);
         setBusquedaInstitucion(institucion?.nombre || '');
         setMostrarDropdownInstitucion(false);
     };
@@ -385,7 +436,7 @@ export const RegistroVisita = () => {
                                     {esInstConfirm ? 'Institución educativa' : 'Grupo particular'}
                                 </p>
                                 <p className="font-bold text-on-surface text-sm">{nombreGrupoConfirm}</p>
-                                {esInstConfirm ? (
+                                {payloadPendiente.grupo.tipo_visitante === 'Institución' ? (
                                     <div className="mt-2 text-xs text-on-surface-variant space-y-0.5">
                                         <p>Nivel educativo: <span className="font-semibold text-on-surface">{payloadPendiente.grupo.nivel_educativo}</span></p>
                                         {institucion_id && institucionSeleccionada ? (

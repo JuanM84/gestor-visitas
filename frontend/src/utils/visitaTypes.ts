@@ -15,3 +15,25 @@ export const BADGE_ESTADO: Record<string, string> = {
     'Realizada': 'bg-[#e6f4ea] text-[#137333] border border-[#a8d5b5]',
     'Cancelada': 'bg-red-100 text-red-700 border border-red-200',
 };
+
+export interface Gestor {
+    id: string | number;
+    nombre: string;
+    tipo?: string;
+    empresa_institucion?: string;
+    telefono?: string;
+    email?: string;
+    localidad?: string;
+    provincia?: string;
+    pais?: string;
+}
+
+export interface Institucion {
+    id: string | number;
+    nombre: string;
+    telefono?: string;
+    email?: string;
+    localidad?: string;
+    provincia?: string;
+    pais?: string;
+}

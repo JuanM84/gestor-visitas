@@ -99,7 +99,7 @@ Admin --> CU017
 | **CU-005** | Cancelar Visita | Guía, Admin | **Completo** | `DetalleVisita.tsx`<br>`ListadoVisitas.tsx` | `PATCH /api/visitas/:id/cancelar` | Solicita motivo de cancelación en ventana emergente e impacta la auditoría. |
 | **CU-006** | Gestionar Gestores | Guía, Admin | **Completo** | `Gestores.tsx` | `/api/gestores` (CRUD)<br>`GestorService` | Soporta filtros dinámicos, edición persistente de contactos y validación de campos geográficos. |
 | **CU-007** | Ver Historial | Guía, Admin | **Completo** | `ListadoVisitas.tsx` | `GET /api/visitas/historial` | Paginación simple en tabla reactiva con búsqueda rápida. |
-| **CU-008** | Exportar Confirmación PDF | Guía, Admin | **Pendiente** | *Ninguno* | *Ninguno* | > [!WARNING]<br>**GAP DETECTADO:** No hay una función para exportar la confirmación individual (comprobante de turno) de una visita en PDF ni en la pantalla de detalle ni de registro. |
+| **CU-008** | Exportar Confirmación PDF | Guía, Admin | **Completo** | `DetalleVisita.tsx` | `GET /api/estadisticas/exportar/visita/:id`<br>`ExportService` | Genera y descarga el comprobante individual en formato PDF con Puppeteer. |
 | **CU-009** | Agendar Descanso | Guía, Admin | **Pendiente** | *Ninguno* | *Ninguno* | > [!WARNING]<br>**GAP DETECTADO:** Aunque el validador de disponibilidad del backend menciona la frase *"o bloqueado por un descanso"*, no existe la entidad, el CRUD ni el tipo de visita `'Descanso'` en la BD para pausar turnos individuales. |
 | **CU-010** | Gestionar Usuarios | Admin | **Completo** | `GestionUsuarios.tsx` | `/api/usuarios` (CRUD)<br>`UsuarioService` | Permite altas, bajas lógicas (activo/inactivo), cambio de contraseña y redefinición de roles. |
 | **CU-011** | Configurar Sistema | Admin | **Completo** | `Configuraciones.tsx` | `/api/configuracion` (Clave-Valor) | Implementado con el esquema flexible de clave-valor. |
@@ -107,26 +107,22 @@ Admin --> CU017
 | **CU-013** | Generar Estadísticas | Admin | **Completo** | `DashboardAdmin.tsx`<br>`StatsBlocks` | `/api/estadisticas/admin`<br>`EstadisticasService` | Muestra KPIs, evolución con bar chart (escalado dinámico de aforo) y rankings. |
 | **CU-014** | Ver Logs de Auditoría | Admin | **Completo** | `Auditoria.tsx` | `/api/auditoria`<br>`AuditoriaService` | Visualización inmutable ordenada cronológicamente de todas las operaciones de registro, edición y cancelación. |
 | **CU-015** | Dashboard Admin | Admin | **Completo** | `DashboardAdmin.tsx` | `/api/estadisticas/admin` | Vista integral con control de períodos mensuales. |
-| **CU-016** | Exportar Reportes | Admin | **Parcial** | `DashboardAdmin.tsx`<br>`ListadoVisitas.tsx` | `/api/estadisticas/exportar`<br>`exportar/diario`<br>`exportar/rango` | > [!NOTE]<br>**GAP DE INTEGRACIÓN:** El backend tiene soporte avanzado de Puppeteer para generar PDFs diarios y de rango personalizado, pero el frontend no expone botones para descargarlos (el de rango solo se consulta en pantalla y el diario no se enlaza). Faltan esos dos botones de descarga en la UI. |
+| **CU-016** | Exportar Reportes | Admin | **Completo** | `DashboardAdmin.tsx`<br>`Dashboard.tsx` | `/api/estadisticas/exportar`<br>`exportar/diario`<br>`exportar/rango` | Soporta la exportación de reportes mensuales, diarios y por rangos de fechas personalizados en formato PDF. |
 | **CU-017** | Configurar Visitas | Admin | **Completo** | `Configuraciones.tsx` | `ConfiguracionService` | Controla directamente el aforo máximo diario (`capacidad_maxima`) y el timeout de sesión. |
 
 ---
 
 ## 🔍 Análisis Detallado de Gaps (Brechas de Desarrollo)
 
-### Gap 1: Confirmación de Visita Individual en PDF (CU-008)
-* **Requisito Especificado**: Permitir al Guía u operador descargar un comprobante PDF del turno asignado con los datos de contacto y del gestor para enviárselo al grupo.
-* **Estado Actual**: Faltante.
-* **Recomendación**: Crear un endpoint `GET /api/visitas/:id/exportar` en el backend utilizando el mismo motor de Puppeteer que ya usas para otros reportes. Luego, añadir un botón de "Descargar Comprobante PDF" en la interfaz `DetalleVisita.tsx`.
+### Gap 1: Confirmación de Visita Individual en PDF (CU-008) — RESUELTO
+* **Estado Actual**: **Completo**. Implementado en `DetalleVisita.tsx` mediante el botón "Reimprimir Comprobante" que consulta el endpoint del backend `/api/estadisticas/exportar/visita/:id`.
 
 ### Gap 2: Pausas Horarias / Agendar Descanso (CU-009)
 * **Requisito Especificado**: Bloquear un slot de horario específico de un día determinado para realizar pausas operativas o almuerzos.
 * **Estado Actual**: Faltante.
-* **Recomendación**: La forma más limpia de implementar esto sin alterar la base de datos es permitir la creación de una "Visita ficticia" cuyo `tipo_visitante` sea `'Particular'` y su nombre de grupo/observación sea `'Descanso Operativo'`. Así, al ocupar el slot del horario con cantidad de personas = 0, el validador de solapamiento impedirá que se reserve esa hora de forma automática. Faltaría crear un botón directo de "Bloquear Horario (Descanso)" en el dashboard o calendario.
+* **Recomendación**: La forma más limpia de implementar esto sin alterar la base de datos es permitir la creación de una "Visita ficticia" your `tipo_visitante` sea `'Particular'` y su nombre de grupo/observación sea `'Descanso Operativo'`. Así, al ocupar el slot del horario con cantidad de personas = 0, el validador de solapamiento impedirá que se reserve esa hora de forma automática. Faltaría crear un botón directo de "Bloquear Horario (Descanso)" en el dashboard o calendario.
 
-### Gap 3: Descarga de Reportes PDF Diarios y por Rango (CU-016)
-* **Requisito Especificado**: Permitir al Administrador descargar un cronograma del día en PDF para entregárselo a los guías de planta, y exportar un PDF consolidado para rangos de fechas personalizados.
-* **Estado Actual**: **Parcial**. El backend ya tiene los servicios listos y optimizados (`generarReporteDiarioPDF` y `generarReporteRangoPDF`). Sin embargo:
-  1. En el frontend del Calendario o Dashboard Diario no hay ningún botón de "Imprimir Cronograma del Día (PDF)".
-  2. En el modal de "Consultar Rango" de `DashboardAdmin.tsx`, el administrador puede ver las estadísticas consolidadas, pero no tiene un botón para disparar la descarga del PDF del período.
-* **Recomendación**: Incorporar los botones de llamada de descarga en el frontend apuntando a `api/estadisticas/exportar/diario?fecha=...` y `api/estadisticas/exportar/rango?desde=...&hasta=...` respectivamente.
+### Gap 3: Descarga de Reportes PDF Diarios y por Rango (CU-016) — RESUELTO
+* **Estado Actual**: **Completo**. 
+  1. En el frontend del Dashboard Diario se incluye un botón para imprimir el cronograma del día en PDF.
+  2. En la UI de estadísticas (`DashboardAdmin.tsx`) se agregaron los botones para exportar el reporte mensual y el reporte por rango de fechas en formato PDF.
