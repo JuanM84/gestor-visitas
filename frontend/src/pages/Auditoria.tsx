@@ -25,7 +25,7 @@ export const Auditoria = () => {
     useEffect(() => {
         const fetchLogs = async () => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auditoria?limite=200`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auditoria?limite=500`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 

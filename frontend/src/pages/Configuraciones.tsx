@@ -4,9 +4,14 @@ import { useAuth } from '../context/AuthContext';
 
 export const Configuraciones = () => {
     // --- Estados para Parámetros Generales ---
-    const [aforoMaximo, setAforoMaximo] = useState('50');
+    const [aforoMaximo, setAforoMaximo] = useState('300');
     const [guardandoAforo, setGuardandoAforo] = useState(false);
     const [mensajeAforo, setMensajeAforo] = useState({ tipo: '', texto: '' });
+
+    // --- Estados para Capacidad por Turno ---
+    const [capacidadPorTurno, setCapacidadPorTurno] = useState('80');
+    const [guardandoTurno, setGuardandoTurno] = useState(false);
+    const [mensajeTurno, setMensajeTurno] = useState({ tipo: '', texto: '' });
 
     // --- Estados para Timeout de Sesión ---
     const [sessionTimeout, setSessionTimeout] = useState('30');
@@ -31,6 +36,7 @@ export const Configuraciones = () => {
     // --- Efecto de carga inicial ---
     useEffect(() => {
         fetchAforo();
+        fetchCapacidadPorTurno();
         fetchDias();
         fetchSessionTimeout();
     }, []);
@@ -73,6 +79,47 @@ export const Configuraciones = () => {
         } finally {
             setGuardandoAforo(false);
             setTimeout(() => setMensajeAforo({ tipo: '', texto: '' }), 4000);
+        }
+    };
+
+    // --- Lógica Capacidad por Turno ---
+    const fetchCapacidadPorTurno = async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/configuracion/capacidad_por_turno`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.valor) setCapacidadPorTurno(data.valor);
+            }
+        } catch (err) {
+            console.error('Error al cargar capacidad por turno', err);
+        }
+    };
+
+    const handleGuardarTurno = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setGuardandoTurno(true);
+        setMensajeTurno({ tipo: '', texto: '' });
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/configuracion/capacidad_por_turno`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ valor: capacidadPorTurno })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al actualizar la capacidad por turno');
+            setMensajeTurno({ tipo: 'exito', texto: '✓ Capacidad por turno actualizada correctamente.' });
+        } catch (err: any) {
+            setMensajeTurno({ tipo: 'error', texto: err.message || 'No se pudo guardar la configuración.' });
+        } finally {
+            setGuardandoTurno(false);
+            setTimeout(() => setMensajeTurno({ tipo: '', texto: '' }), 4000);
         }
     };
 
@@ -197,7 +244,7 @@ export const Configuraciones = () => {
                         <form onSubmit={handleGuardarAforo} className="flex flex-col gap-4">
                             <div>
                                 <label className="font-label-sm block mb-1">Aforo Máximo Diario</label>
-                                <p className="text-xs text-on-surface-variant mb-2">Cantidad límite de personas que pueden visitar el túnel en un mismo día.</p>
+                                <p className="text-xs text-on-surface-variant mb-2">Límite total de personas que pueden visitar el túnel en un mismo día (suma de todos los turnos).</p>
                                 <div className="relative">
                                     <input
                                         type="number"
@@ -219,6 +266,45 @@ export const Configuraciones = () => {
 
                             <Button variant="primary" type="submit" disabled={guardandoAforo} className="w-full mt-2">
                                 {guardandoAforo ? 'Guardando...' : 'Actualizar Aforo'}
+                            </Button>
+                        </form>
+                    </div>
+
+                    {/* CARD: Capacidad por Turno */}
+                    <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant">
+                        <div className="flex items-center gap-2 mb-4 text-primary">
+                            <span className="material-symbols-outlined">schedule</span>
+                            <h2 className="font-h3 text-h3">Capacidad por Turno</h2>
+                        </div>
+
+                        <form onSubmit={handleGuardarTurno} className="flex flex-col gap-4">
+                            <div>
+                                <label className="font-label-sm block mb-1">Límite de personas por horario</label>
+                                <p className="text-xs text-on-surface-variant mb-2">Máximo de personas que pueden compartir el mismo turno horario (ej: 09:00 hs). Permite múltiples grupos en un mismo turno hasta alcanzar este límite.</p>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        required
+                                        value={capacidadPorTurno}
+                                        onChange={(e) => setCapacidadPorTurno(e.target.value)}
+                                        className={inputStyles}
+                                    />
+                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant">personas</span>
+                                </div>
+                                <p className="text-xs text-on-surface-variant mt-2">
+                                    Por defecto: 80 personas/turno
+                                </p>
+                            </div>
+
+                            {mensajeTurno.texto && (
+                                <div className={`p-3 rounded-lg text-sm font-medium ${mensajeTurno.tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`}>
+                                    {mensajeTurno.texto}
+                                </div>
+                            )}
+
+                            <Button variant="primary" type="submit" disabled={guardandoTurno} className="w-full mt-2">
+                                {guardandoTurno ? 'Guardando...' : 'Actualizar Cap. Turno'}
                             </Button>
                         </form>
                     </div>

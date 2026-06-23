@@ -182,7 +182,7 @@ erDiagram
     }
 
     CONFIGURACION {
-        string clave PK "e.g., capacidad_maxima, session_timeout_minutes"
+        string clave PK "capacidad_maxima, capacidad_por_turno, session_timeout_minutes"
         string valor
     }
 
@@ -195,9 +195,15 @@ erDiagram
 ```
 
 ### Reglas de Negocio Implementadas en Consultas del Backend
-* **Aforo Diario**: Antes de agendar o editar una visita, el backend consulta el aforo total reservado para la fecha (`SELECT SUM(cantidad_personas)...`). La suma de las personas de la nueva visita más las existentes no puede superar la clave `capacidad_maxima` configurada en la tabla `CONFIGURACION` (por defecto 300 personas).
-* **Días Inhábiles**: El validador cruza la fecha de la visita contra la tabla `DIAINHABIL`. Si existe un registro coincendente, la visita es rechazada automáticamente.
-* **Solapamiento Horario**: No se permiten dos visitas programadas en la misma hora exacta del mismo día.
+
+Todas las validaciones de disponibilidad están centralizadas en `AvailabilityService` (`disponibilidad.service.ts`) y se ejecutan en el siguiente orden antes de aceptar cualquier registro o modificación de visita:
+
+* **Aforo Diario** (`capacidad_maxima`): El backend suma todas las personas agendadas para la fecha (`SELECT SUM(cantidad_personas) ... WHERE fecha = $1 AND estado != 'Cancelada'`). Si agregar el nuevo grupo supera el límite diario configurado en `CONFIGURACION` (por defecto 300 personas), la solicitud es rechazada.
+
+* **Días Inhábiles**: El validador cruza la fecha de la visita contra la tabla `DIAINHABIL`. Si existe un registro coincidente, la visita es rechazada automáticamente, independientemente del aforo disponible.
+
+* **Aforo por Turno** (`capacidad_por_turno`): **Múltiples grupos pueden compartir el mismo turno horario** (misma `fecha` + `hora_inicio`). El backend suma las personas ya agendadas en ese turno específico y verifica que agregar el nuevo grupo no supere el límite por turno configurado en `CONFIGURACION` (por defecto 80 personas/turno). Esta regla reemplaza al antiguo bloqueo de "solapamiento horario" que impedía registrar más de una visita por slot.
+
 * **Baja Lógica**: Los usuarios del sistema no son eliminados físicamente para no romper la integridad referencial de los logs de auditoría; en su lugar, se gestionan a través del campo booleano `activo`.
 
 ---
@@ -253,15 +259,18 @@ sequenceDiagram
                 F-->>U: Muestra alerta de "Capacidad Máxima Superada"
             else Aforo Disponible
                 
-                %% Validar Solapamiento Horario
-                S->>Rep: verificarSolapamiento(fecha, hora)
-                Rep->>DB: SELECT * FROM visita WHERE fecha = $1 AND hora_inicio = $2 AND estado <> 'Cancelada'
-                DB-->>Rep: Listado de turnos concurrentes
-                alt Horario ya ocupado
-                    S-->>C: Lanza Error ("Ya existe una visita agendada en ese horario")
+                %% Validar Aforo por Turno (permite múltiples grupos en el mismo slot)
+                S->>Rep: obtenerCapacidadPorTurno()
+                Rep->>DB: SELECT valor FROM configuracion WHERE clave = 'capacidad_por_turno'
+                DB-->>Rep: Capacidad por turno (ej. 80)
+                S->>Rep: obtenerPersonasPorTurno(fecha, hora_inicio)
+                Rep->>DB: SELECT SUM(cantidad_personas) FROM visita WHERE fecha = $1 AND hora_inicio = $2 AND estado <> 'Cancelada'
+                DB-->>Rep: Personas ya agendadas en ese turno (ej. 50)
+                alt Aforo del turno excedido (50 + nuevas personas > 80)
+                    S-->>C: Lanza Error ("Capacidad del turno superada")
                     C-->>F: 400 Bad Request (JSON Error)
-                    F-->>U: Muestra alerta de "Horario Solapado"
-                else Horario Libre
+                    F-->>U: Muestra alerta con personas disponibles en ese turno
+                else Turno con cupo disponible
                     
                     %% Insertar Visita e Impactar Auditoría
                     S->>Rep: guardarVisita(datos)
@@ -281,7 +290,40 @@ sequenceDiagram
 
 ---
 
-## 6. 🔒 Seguridad y Auditoría
+## 6. 👥 Múltiples Grupos por Turno
+
+Desde la versión actual, el sistema permite registrar **más de un grupo en el mismo turno horario** (misma `fecha` + `hora_inicio`). Esta funcionalidad reemplaza al antiguo control de solapamiento que bloqueaba cualquier segundo intento de agendado en el mismo slot.
+
+### Modelo de Capacidad por Turno
+
+El sistema ahora maneja **dos niveles de cupo independientes**:
+
+| Nivel | Parámetro en BD | Descripción | Default |
+|-------|----------------|-------------|--------|
+| Diario | `capacidad_maxima` | Tope total de personas en el día (suma de todos los turnos) | 300 |
+| Por Turno | `capacidad_por_turno` | Tope de personas en un mismo slot `fecha + hora_inicio` | 80 |
+
+Ambos parámetros son configurables en tiempo real desde la página **Configuraciones del Sistema**, y cada cambio queda registrado automáticamente en el log de auditoría.
+
+### Comportamiento en el Dashboard
+
+El cronograma operativo del Dashboard fue actualizado para reflejar esta realidad:
+
+* Los slots con **un solo grupo** se muestran como antes.
+* Los slots con **múltiples grupos** muestran una cabecera con el badge `N grupos`, las personas ocupadas y el cupo restante del turno.
+* Dentro de cada slot, cada grupo se lista en su propia fila con sus acciones individuales (marcar como realizada, ver detalle).
+* Si el turno aún tiene cupo disponible, aparece el botón **"Agregar grupo"** directamente en la cabecera del slot.
+* Si el cupo del turno se agotó, el botón no se muestra y se indica `lleno`.
+
+### Impacto en Auditoría y Estadísticas
+
+* Cada grupo registrado en un turno genera su **propia fila** en la tabla `VISITA` y su propio registro en `LOGAUDITORIA`.
+* Las estadísticas, el Listado de Visitas y el Calendario siguen contabilizando por visita individual, por lo que múltiples grupos se suman automáticamente sin cambios en esas capas.
+* El Calendario mensual muestra el **total de grupos** y **total de personas** por día, incluyendo todos los grupos de todos los turnos de ese día.
+
+---
+
+## 7. 🔒 Seguridad y Auditoría
 
 La seguridad es transversal a toda la aplicación y se gestiona bajo los siguientes estándares:
 

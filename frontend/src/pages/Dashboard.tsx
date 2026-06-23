@@ -14,6 +14,7 @@ export const Dashboard = () => {
     const [visitas, setVisitas] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [diaInhabil, setDiaInhabil] = useState<{ esInhabil: boolean; descripcion: string }>({ esInhabil: false, descripcion: '' });
+    const [capacidadPorTurno, setCapacidadPorTurno] = useState<number>(80);
 
     // 2. Cada vez que la fecha cambie, actualizamos la URL y traemos los datos
     useEffect(() => {
@@ -24,10 +25,11 @@ export const Dashboard = () => {
             try {
                 const headers = { 'Authorization': `Bearer ${token}` };
 
-                // Traemos visitas y días inhábiles en paralelo
-                const [resVisitas, resDias] = await Promise.all([
+                // Traemos visitas, días inhábiles y capacidad por turno en paralelo
+                const [resVisitas, resDias, resCap] = await Promise.all([
                     fetch(`${import.meta.env.VITE_API_URL}/api/visitas?fecha=${fechaSeleccionada}`, { headers }),
                     fetch(`${import.meta.env.VITE_API_URL}/api/dias-inhabiles`, { headers }),
+                    fetch(`${import.meta.env.VITE_API_URL}/api/configuracion/capacidad_por_turno`, { headers }),
                 ]);
 
                 if (resVisitas.ok) {
@@ -42,6 +44,11 @@ export const Dashboard = () => {
                         ? { esInhabil: true, descripcion: encontrado.descripcion }
                         : { esInhabil: false, descripcion: '' }
                     );
+                }
+
+                if (resCap.ok) {
+                    const capData = await resCap.json();
+                    setCapacidadPorTurno(parseInt(capData.valor, 10) || 80);
                 }
             } catch (error) {
                 console.error("Error al cargar datos:", error);
@@ -82,6 +89,11 @@ export const Dashboard = () => {
     const visitasActivas = visitas.filter(v => v.estado !== 'Cancelada');
     const totalPersonas = visitasActivas.reduce((acc, v) => acc + parseInt(v.cantidad_personas), 0);
     const totalCruces = visitasActivas.filter(v => v.tiene_cruce_tunel).length;
+    const totalGrupos = visitasActivas.length;
+
+    // Agrupa visitas activas por slot de hora
+    const visitasPorSlot = (slot: string) => visitasActivas.filter(v => v.hora_inicio.slice(0, 5) === slot);
+    const personasEnSlot = (slot: string) => visitasPorSlot(slot).reduce((acc, v) => acc + parseInt(v.cantidad_personas), 0);
 
     // Genera e imprime el PDF del día
     const [imprimiendoDia, setImprimiendoDia] = useState(false);
@@ -229,9 +241,9 @@ export const Dashboard = () => {
                         </span>
                     ) : (
                         <span className="text-sm font-medium text-outline">
-                            {visitasActivas.length === 0
+                            {totalGrupos === 0
                                 ? 'Todos los turnos disponibles'
-                                : `${visitasActivas.length} turno${visitasActivas.length !== 1 ? 's' : ''} ocupado${visitasActivas.length !== 1 ? 's' : ''} · ${SLOTS.length - visitasActivas.length} libre${SLOTS.length - visitasActivas.length !== 1 ? 's' : ''}`
+                                : `${totalGrupos} grupo${totalGrupos !== 1 ? 's' : ''} agendado${totalGrupos !== 1 ? 's' : ''} · ${totalPersonas} personas`
                             }
                         </span>
                     )}
@@ -243,70 +255,109 @@ export const Dashboard = () => {
                     ) : (
                         <div className="space-y-2">
                             {SLOTS.map((slot) => {
-                                const visita = visitasActivas.find(v => v.hora_inicio.slice(0, 5) === slot);
+                                const visitasDelSlot = visitasPorSlot(slot);
+                                const personasOcupadas = personasEnSlot(slot);
+                                const tieneVisitas = visitasDelSlot.length > 0;
+                                const cupoRestante = capacidadPorTurno - personasOcupadas;
+                                const slotLleno = cupoRestante <= 0;
 
-                                if (visita) {
-                                    // ── Slot OCUPADO ──
+                                if (tieneVisitas) {
+                                    // ── Slot OCUPADO (uno o más grupos) ──
                                     return (
                                         <div
                                             key={slot}
-                                            className="group p-4 border border-outline-variant rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-primary/40 hover:bg-primary/[0.02] transition-all"
+                                            className="border border-outline-variant rounded-2xl overflow-hidden hover:border-primary/40 transition-all"
                                         >
-                                            <div className="flex gap-4 items-center">
-                                                <div className="w-14 h-14 rounded-2xl bg-sky-100 text-sky-800 flex flex-col items-center justify-center border border-sky-200 shrink-0">
-                                                    <span className="text-base font-black leading-none">{slot}</span>
-                                                    <span className="text-[9px] uppercase font-bold mt-0.5">HS</span>
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-0.5">
-                                                        <h4 className="font-black text-on-surface text-lg leading-tight">{visita.grupo_nombre}</h4>
-                                                        {visita.tiene_cruce_tunel && (
-                                                            <span className="material-symbols-outlined text-amber-600 text-[18px]" title="Realiza cruce del túnel">swap_horiz</span>
-                                                        )}
-                                                        {visita.tiene_discapacidad && (
-                                                            <span className="material-symbols-outlined text-secondary text-[18px]" title="Requiere accesibilidad">accessible_forward</span>
-                                                        )}
+                                            {/* Cabecera del turno */}
+                                            <div className="flex items-center justify-between px-4 py-2.5 bg-sky-50 border-b border-sky-100">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-800 flex flex-col items-center justify-center border border-sky-200 shrink-0">
+                                                        <span className="text-base font-black leading-none">{slot}</span>
+                                                        <span className="text-[9px] uppercase font-bold mt-0.5">HS</span>
                                                     </div>
-                                                    <p className="text-on-surface-variant flex items-center gap-1 text-sm font-medium">
-                                                        <span className="material-symbols-outlined text-[16px]">manage_accounts</span>
-                                                        {visita.gestor_nombre}
-                                                        <span className="mx-1 text-outline">•</span>
-                                                        <span>{visita.tipo}</span>
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-2 self-end md:self-center">
-                                                <div className="text-right">
-                                                    <p className="text-xl font-black text-primary leading-none">{visita.cantidad_personas}</p>
-                                                    <p className="text-[10px] uppercase font-bold text-outline mt-0.5">Personas</p>
-                                                </div>
-                                                {/* Solo mostrar acciones si el día es hábil */}
-                                                {!diaInhabil.esInhabil && visita.estado === 'Agendada' && (
-                                                    <button
-                                                        onClick={() => marcarRealizada(visita.id)}
-                                                        disabled={marcandoRealizada === visita.id}
-                                                        title="Marcar como realizada"
-                                                        className="p-2 hover:bg-green-50 rounded-full text-[#137333] transition-colors disabled:opacity-40"
-                                                    >
-                                                        <span className="material-symbols-outlined">
-                                                            {marcandoRealizada === visita.id ? 'progress_activity' : 'check_circle'}
+                                                    <div className="flex items-center gap-2">
+                                                        {visitasDelSlot.length > 1 && (
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-200 text-sky-800 text-[11px] font-bold">
+                                                                <span className="material-symbols-outlined text-[13px]">groups</span>
+                                                                {visitasDelSlot.length} grupos
+                                                            </span>
+                                                        )}
+                                                        <span className="text-xs text-sky-700 font-medium">
+                                                            {personasOcupadas} pers. · cupo: {cupoRestante <= 0 ? <span className="text-error font-bold">lleno</span> : `${cupoRestante} disp.`}
                                                         </span>
+                                                    </div>
+                                                </div>
+                                                {!diaInhabil.esInhabil && !slotLleno && (
+                                                    <button
+                                                        onClick={() => navigate(`/nueva-visita?fecha=${fechaSeleccionada}&hora=${slot}`)}
+                                                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 text-xs font-bold transition-colors"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[14px]">add</span>
+                                                        Agregar grupo
                                                     </button>
                                                 )}
-                                                {visita.estado === 'Realizada' && (
-                                                    <span className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[#137333] bg-green-50 border border-[#137333]/20 text-xs font-bold">
-                                                        <span className="material-symbols-outlined text-[15px]">check_circle</span>
-                                                        Realizada
-                                                    </span>
-                                                )}
-                                                <button
-                                                    onClick={() => navigate(`/visitas/${visita.id}`)}
-                                                    className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors"
-                                                    title="Ver detalle"
-                                                >
-                                                    <span className="material-symbols-outlined">visibility</span>
-                                                </button>
+                                            </div>
+
+                                            {/* Lista de grupos del turno */}
+                                            <div className="divide-y divide-outline-variant/40">
+                                                {visitasDelSlot.map((visita) => (
+                                                    <div
+                                                        key={visita.id}
+                                                        className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 py-3 hover:bg-primary/[0.02] transition-colors"
+                                                    >
+                                                        <div className="flex gap-3 items-center">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-0.5">
+                                                                    <h4 className="font-black text-on-surface text-base leading-tight">{visita.grupo_nombre}</h4>
+                                                                    {visita.tiene_cruce_tunel && (
+                                                                        <span className="material-symbols-outlined text-amber-600 text-[16px]" title="Realiza cruce del túnel">swap_horiz</span>
+                                                                    )}
+                                                                    {visita.tiene_discapacidad && (
+                                                                        <span className="material-symbols-outlined text-secondary text-[16px]" title="Requiere accesibilidad">accessible_forward</span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-on-surface-variant flex items-center gap-1 text-xs font-medium">
+                                                                    <span className="material-symbols-outlined text-[14px]">manage_accounts</span>
+                                                                    {visita.gestor_nombre}
+                                                                    <span className="mx-1 text-outline">•</span>
+                                                                    <span>{visita.tipo}</span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 self-end md:self-center">
+                                                            <div className="text-right">
+                                                                <p className="text-lg font-black text-primary leading-none">{visita.cantidad_personas}</p>
+                                                                <p className="text-[10px] uppercase font-bold text-outline mt-0.5">Personas</p>
+                                                            </div>
+                                                            {!diaInhabil.esInhabil && visita.estado === 'Agendada' && (
+                                                                <button
+                                                                    onClick={() => marcarRealizada(visita.id)}
+                                                                    disabled={marcandoRealizada === visita.id}
+                                                                    title="Marcar como realizada"
+                                                                    className="p-2 hover:bg-green-50 rounded-full text-[#137333] transition-colors disabled:opacity-40"
+                                                                >
+                                                                    <span className="material-symbols-outlined">
+                                                                        {marcandoRealizada === visita.id ? 'progress_activity' : 'check_circle'}
+                                                                    </span>
+                                                                </button>
+                                                            )}
+                                                            {visita.estado === 'Realizada' && (
+                                                                <span className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[#137333] bg-green-50 border border-[#137333]/20 text-xs font-bold">
+                                                                    <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                                                                    Realizada
+                                                                </span>
+                                                            )}
+                                                            <button
+                                                                onClick={() => navigate(`/visitas/${visita.id}`)}
+                                                                className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors"
+                                                                title="Ver detalle"
+                                                            >
+                                                                <span className="material-symbols-outlined">visibility</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                     );
@@ -314,7 +365,6 @@ export const Dashboard = () => {
 
                                 // ── Slot LIBRE ──
                                 if (diaInhabil.esInhabil) {
-                                    // Día inhábil: slot no clickeable
                                     return (
                                         <div
                                             key={slot}
