@@ -50,13 +50,16 @@ export const ExportController = {
         try {
             const fechaDesde = req.query.desde as string;
             const fechaHasta = req.query.hasta as string;
+            const estadosRaw = req.query.estados as string;
             const usuarioNombre = req.usuario?.nombre || 'Sistema';
 
             if (!fechaDesde || !fechaHasta || !/^\d{4}-\d{2}-\d{2}$/.test(fechaDesde) || !/^\d{4}-\d{2}-\d{2}$/.test(fechaHasta)) {
                 return res.status(400).json({ error: 'Los parámetros desde y hasta son requeridos en formato YYYY-MM-DD' });
             }
 
-            const pdfBuffer = await ExportService.generarReporteRangoPDF(fechaDesde, fechaHasta, usuarioNombre);
+            const estados = estadosRaw ? estadosRaw.split(',').filter(Boolean) : undefined;
+
+            const pdfBuffer = await ExportService.generarReporteRangoPDF(fechaDesde, fechaHasta, usuarioNombre, estados);
 
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename=Reporte_Visitas_${fechaDesde}_a_${fechaHasta}.pdf`);

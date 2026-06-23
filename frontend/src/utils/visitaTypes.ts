@@ -12,6 +12,7 @@ export type EstadoVisita = typeof ESTADOS_VISITA[number];
 // Colores de badge por estado — fuente única para todos los componentes
 export const BADGE_ESTADO: Record<string, string> = {
     'Agendada':  'bg-sky-100 text-sky-800 border border-sky-200',
+    'No realizada': 'bg-sky-100 text-sky-800 border border-sky-200',
     'Realizada': 'bg-[#e6f4ea] text-[#137333] border border-[#a8d5b5]',
     'Cancelada': 'bg-red-100 text-red-700 border border-red-200',
 };

@@ -15,6 +15,19 @@ export const Listado = () => {
     const [exportando, setExportando] = useState(false);
     const [buscado, setBuscado] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [filtroEstados, setFiltroEstados] = useState({
+        Realizada: true,
+        Agendada: true,
+        Cancelada: true
+    });
+
+    const visitasFiltradas = visitas.filter(v => {
+        let estadoNormalizado = v.estado;
+        if (estadoNormalizado === 'No realizada') {
+            estadoNormalizado = 'Agendada';
+        }
+        return filtroEstados[estadoNormalizado as keyof typeof filtroEstados] ?? true;
+    });
 
     const handleBuscar = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,8 +63,13 @@ export const Listado = () => {
         if (!desde || !hasta) return;
         setExportando(true);
         try {
+            const estadosSeleccionados = Object.entries(filtroEstados)
+                .filter(([_, value]) => value)
+                .map(([key]) => key)
+                .join(',');
+
             const res = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/estadisticas/exportar/rango?desde=${desde}&hasta=${hasta}`,
+                `${import.meta.env.VITE_API_URL}/api/estadisticas/exportar/rango?desde=${desde}&hasta=${hasta}&estados=${estadosSeleccionados}`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
             if (!res.ok) throw new Error('Error al generar el PDF de listado');
@@ -180,6 +198,51 @@ export const Listado = () => {
                     </div>
                 </div>
 
+                {/* Checkboxes de Estado */}
+                <div className="mt-5 pt-4 border-t border-outline-variant/60 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <span className="text-xs font-bold uppercase text-outline tracking-wider">Filtrar por Estado:</span>
+                    <div className="flex flex-wrap gap-5">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer transition-all"
+                                checked={filtroEstados.Realizada}
+                                onChange={(e) => setFiltroEstados({ ...filtroEstados, Realizada: e.target.checked })}
+                            />
+                            <span className="text-sm font-semibold text-on-surface flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#137333]"></span>
+                                Realizada
+                            </span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer transition-all"
+                                checked={filtroEstados.Agendada}
+                                onChange={(e) => setFiltroEstados({ ...filtroEstados, Agendada: e.target.checked })}
+                            />
+                            <span className="text-sm font-semibold text-on-surface flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                                Agendada
+                            </span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer transition-all"
+                                checked={filtroEstados.Cancelada}
+                                onChange={(e) => setFiltroEstados({ ...filtroEstados, Cancelada: e.target.checked })}
+                            />
+                            <span className="text-sm font-semibold text-on-surface flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                Cancelada
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
                 {error && (
                     <div className="mt-3 flex items-center gap-2 text-error text-sm font-semibold">
                         <span className="material-symbols-outlined text-[16px]">error</span>
@@ -205,15 +268,19 @@ export const Listado = () => {
                     </div>
                 )}
 
-                {buscado && !loading && visitas.length === 0 && (
+                {buscado && !loading && visitasFiltradas.length === 0 && (
                     <div className="py-20 text-center text-on-surface-variant">
                         <span className="material-symbols-outlined text-5xl text-outline mb-3 block">event_busy</span>
                         <p className="font-semibold text-lg text-on-surface">No se encontraron visitas</p>
-                        <p className="text-sm text-outline mt-1">No hay registros de visitas agendadas entre el {formatFecha(desde)} y el {formatFecha(hasta)}.</p>
+                        <p className="text-sm text-outline mt-1 border-t border-outline-variant/10 pt-2">
+                            {visitas.length === 0
+                                ? `No hay registros de visitas agendadas entre el ${formatFecha(desde)} y el ${formatFecha(hasta)}.`
+                                : 'Ninguna visita coincide con los filtros de estado seleccionados.'}
+                        </p>
                     </div>
                 )}
 
-                {buscado && !loading && visitas.length > 0 && (
+                {buscado && !loading && visitasFiltradas.length > 0 && (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-surface-container-low border-b border-outline-variant">
@@ -228,7 +295,7 @@ export const Listado = () => {
                                 </tr>
                             </thead>
                             <tbody className="font-body-sm text-on-surface divide-y divide-outline-variant">
-                                {visitas.map((v) => (
+                                {visitasFiltradas.map((v) => (
                                     <tr key={v.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="p-4">
                                             <div className="font-semibold text-on-surface">{formatFecha(v.fecha)}</div>
@@ -289,10 +356,10 @@ export const Listado = () => {
                     </div>
                 )}
 
-                {buscado && !loading && visitas.length > 0 && (
+                {buscado && !loading && visitasFiltradas.length > 0 && (
                     <div className="p-4 border-t border-outline-variant bg-surface-container-low flex items-center justify-between text-xs text-on-surface-variant">
                         <div>
-                            Total del período: <span className="font-bold text-on-surface">{visitas.length} visitas</span> con <span className="font-bold text-on-surface">{visitas.reduce((acc, v) => acc + parseInt(v.cantidad_personas), 0)} personas</span> en total.
+                            Total del período: <span className="font-bold text-on-surface">{visitasFiltradas.length} visitas</span> con <span className="font-bold text-on-surface">{visitasFiltradas.reduce((acc, v) => acc + parseInt(v.cantidad_personas), 0)} personas</span> en total.
                         </div>
                     </div>
                 )}

@@ -338,7 +338,14 @@ export const ExportService = {
         return pdfBuffer;
     },
 
-    async generarReporteRangoPDF(fechaDesde: string, fechaHasta: string, usuarioNombre: string) {
+    async generarReporteRangoPDF(fechaDesde: string, fechaHasta: string, usuarioNombre: string, estados?: string[]) {
+        let estadosDb = estados || ['Realizada'];
+        
+        // Si 'Agendada' está seleccionado, también incluimos la versión legacy 'No realizada' de la BD
+        if (estadosDb.includes('Agendada') && !estadosDb.includes('No realizada')) {
+            estadosDb = [...estadosDb, 'No realizada'];
+        }
+
         const query = `
             SELECT 
                 v.fecha, 
@@ -349,15 +356,16 @@ export const ExportService = {
                 v.cantidad_personas as personas,
                 v.tiene_cruce_tunel as cruce,
                 v.tiene_discapacidad as discapacidad,
-                v.discapacidad_detalle
+                v.discapacidad_detalle,
+                v.estado
             FROM Visita v
             JOIN Gestor g ON v.gestor_id = g.id
             JOIN Grupo gr ON v.grupo_id = gr.id
             WHERE v.fecha BETWEEN $1 AND $2
-              AND v.estado = 'Realizada'
+              AND v.estado = ANY($3::varchar[])
             ORDER BY v.fecha ASC, v.hora_inicio ASC
         `;
-        const result = await pool.query(query, [fechaDesde, fechaHasta]);
+        const result = await pool.query(query, [fechaDesde, fechaHasta, estadosDb]);
         const visitas = result.rows;
 
         const totalPersonas = visitas.reduce((acc: number, v: any) => acc + parseInt(v.personas), 0);
@@ -384,6 +392,9 @@ export const ExportService = {
                 .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; }
                 .badge-si { background-color: #dcfce7; color: #166534; }
                 .badge-no { background-color: #f1f5f9; color: #64748b; }
+                .badge-agendada { background-color: #e0f2fe; color: #0369a1; }
+                .badge-realizada { background-color: #dcfce7; color: #166534; }
+                .badge-cancelada { background-color: #fee2e2; color: #991b1b; }
                 .summary { margin-top: 30px; float: right; width: 250px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; }
                 .summary h3 { margin: 0 0 10px 0; font-size: 14px; color: #0369a1; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; }
                 .summary-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
@@ -418,6 +429,7 @@ export const ExportService = {
                         <th>Hora</th>
                         <th>Grupo / Institución</th>
                         <th>Personas</th>
+                        <th>Estado</th>
                         <th>Cruce</th>
                         <th>Accesibilidad</th>
                     </tr>
@@ -425,12 +437,16 @@ export const ExportService = {
                 <tbody>
                     ${visitas.map(v => {
                         const dateStr = new Date(v.fecha).toLocaleDateString('es-AR', { timeZone: 'UTC' });
+                        const displayEstado = v.estado === 'No realizada' ? 'AGENDADA' : v.estado.toUpperCase();
+                        const badgeClass = v.estado === 'Realizada' ? 'badge-realizada' :
+                                           v.estado === 'Cancelada' ? 'badge-cancelada' : 'badge-agendada';
                         return `
                         <tr>
                             <td>${dateStr}</td>
                             <td>${v.hora.slice(0, 5)} hs</td>
                             <td><b>${v.grupo}</b><br>${v.institucion}</td>
                             <td><b>${v.personas}</b></td>
+                            <td><span class="badge ${badgeClass}">${displayEstado}</span></td>
                             <td><span class="badge ${v.cruce ? 'badge-si' : 'badge-no'}">${v.cruce ? 'SÍ' : 'NO'}</span></td>
                             <td>${v.discapacidad ? `<span class="badge badge-si">SÍ</span>` : '<span class="badge badge-no">NO</span>'}</td>
                         </tr>
