@@ -237,6 +237,26 @@ export const VisitaRepository = {
     },
 
     /**
+     * Actualiza el nivel educativo del Grupo vinculado a una visita.
+     * Solo aplica a visitas de tipo 'Institución'.
+     *
+     * @param visitaId       - UUID de la visita (se usa para encontrar su grupo_id).
+     * @param nivelEducativo - Nivel educativo a establecer.
+     * @param client         - (Opcional) Cliente de transacción.
+     */
+    async updateGrupoNivelEducativo(visitaId: string, nivelEducativo: string | null, client?: any) {
+        const query = `
+            UPDATE Grupo
+            SET nivel_educativo = $1
+            WHERE id = (SELECT grupo_id FROM Visita WHERE id = $2)
+            RETURNING nivel_educativo;
+        `;
+        const db = client || pool;
+        const result = await db.query(query, [nivelEducativo, visitaId]);
+        return result.rows[0];
+    },
+
+    /**
      * Actualiza el gestor de una visita. Se actualiza tanto en la tabla Visita
      * como en la tabla Grupo para mantener la consistencia del modelo de datos.
      *

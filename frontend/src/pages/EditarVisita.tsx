@@ -7,6 +7,8 @@ import { ESTADOS_VISITA, BADGE_ESTADO } from '../utils/visitaTypes';
 import { useAuth } from '../context/AuthContext';
 import { UbicacionSelector } from '../components/ui/UbicacionSelector';
 
+const NIVELES_EDUCATIVOS = ['Infantes', 'Primario', 'Secundario', 'Terciario', 'Universitario', 'Adultos Mayores'];
+
 // Sub-componente: Modal genérico
 const Modal = ({ titulo, onClose, children }: { titulo: string; onClose: () => void; children: React.ReactNode }) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -37,7 +39,8 @@ export const EditarVisita = () => {
         tiene_cruce_tunel: false,
         tiene_discapacidad: false,
         discapacidad_detalle: '',
-        observaciones: ''
+        observaciones: '',
+        nivel_educativo: ''
     });
 
     // Guardamos el tipo de visitante para mostrar el label correcto en observaciones
@@ -103,7 +106,8 @@ export const EditarVisita = () => {
                     tiene_cruce_tunel: data.tiene_cruce_tunel || false,
                     tiene_discapacidad: data.tiene_discapacidad || false,
                     discapacidad_detalle: data.discapacidad_detalle || '',
-                    observaciones: data.observaciones || ''
+                    observaciones: data.observaciones || '',
+                    nivel_educativo: data.nivel_educativo || ''
                 });
 
                 // Precargar IDs y búsquedas
@@ -143,7 +147,8 @@ export const EditarVisita = () => {
             ...formData,
             discapacidad_detalle: formData.tiene_discapacidad ? formData.discapacidad_detalle : '',
             gestor_id: gestorId,
-            institucion_id: tipoVisitante === 'Institución' ? institucionId : null
+            institucion_id: tipoVisitante === 'Institución' ? institucionId : null,
+            nivel_educativo: tipoVisitante === 'Institución' ? formData.nivel_educativo : null
         };
 
         try {
@@ -405,6 +410,21 @@ export const EditarVisita = () => {
                                     </Button>
                                 </div>
                             )}
+
+                            <div>
+                                <label className="font-label-sm block mb-1">Nivel Educativo *</label>
+                                <select
+                                    required
+                                    value={formData.nivel_educativo}
+                                    onChange={(e) => setFormData({ ...formData, nivel_educativo: e.target.value })}
+                                    className={cn(inputStyles, "cursor-pointer")}
+                                >
+                                    <option value="" disabled>Seleccione nivel educativo</option>
+                                    {NIVELES_EDUCATIVOS.map(n => (
+                                        <option key={n} value={n}>{n}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     )}
 

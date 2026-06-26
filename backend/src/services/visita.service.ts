@@ -75,6 +75,7 @@ interface ModificarVisitaDto {
     tiene_discapacidad?: boolean;
     discapacidad_detalle?: string;
     observaciones?: string;
+    nivel_educativo?: string;
     // Campos para cambiar gestor
     gestor_id?: string;
     nuevoGestor?: NuevoGestorDto;
@@ -377,6 +378,15 @@ export const VisitaService = {
             throw new Error(`Estado inválido. Los valores permitidos son: ${ESTADOS_VISITA.join(', ')}`);
         }
 
+        if (datos.nivel_educativo !== undefined) {
+            if (visitaActual.tipo_visitante !== 'Institución') {
+                throw new Error('Solo se puede establecer el nivel educativo para visitas de tipo Institución');
+            }
+            if (!NIVELES_EDUCATIVOS.includes(datos.nivel_educativo)) {
+                throw new Error(`Nivel educativo inválido. Valores permitidos: ${NIVELES_EDUCATIVOS.join(', ')}`);
+            }
+        }
+
         // 'fr-CA' devuelve YYYY-MM-DD respetando timezone local, evita el bug UTC-3
         const nuevaFecha = datos.fecha ?? new Date(visitaActual.fecha).toLocaleDateString('fr-CA');
         const nuevaHora = datos.hora_inicio ?? visitaActual.hora_inicio;
@@ -482,6 +492,11 @@ export const VisitaService = {
                 await VisitaRepository.updateGrupoObservaciones(id, obsValue, client);
             }
 
+            // ── Actualizar nivel educativo en la tabla Grupo ───────────────────
+            if (datos.nivel_educativo !== undefined && visitaActual.tipo_visitante === 'Institución') {
+                await VisitaRepository.updateGrupoNivelEducativo(id, datos.nivel_educativo, client);
+            }
+
             // ── Construir mensaje de auditoría ────────────────────────────────
             if (estadoCambio) {
                 cambios.push(`estado de "${visitaActual.estado}" a "${datos.estado}"`);
@@ -497,6 +512,9 @@ export const VisitaService = {
             }
             if (datos.observaciones !== undefined) {
                 cambios.push('observaciones del grupo');
+            }
+            if (datos.nivel_educativo !== undefined && datos.nivel_educativo !== visitaActual.nivel_educativo) {
+                cambios.push(`nivel educativo a "${datos.nivel_educativo}"`);
             }
 
             const descripcionCambios = cambios.length > 0
