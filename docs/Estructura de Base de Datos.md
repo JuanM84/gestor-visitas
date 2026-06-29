@@ -11,7 +11,7 @@ erDiagram
     INSTITUCION ||--o{ GRUPO : pertenece
     GRUPO ||--o{ VISITA : participa
     CONFIGURACION ||--o{ VISITA : ""
-    DIAININHABIL ||--|| VISITA : anula
+    DIAINHABIL ||--|| VISITA : anula
 
     USUARIO {
         string id PK
@@ -79,7 +79,7 @@ erDiagram
         timestamp updated_at
     }
 
-    DIAININHABIL {
+    DIAINHABIL {
         string id PK
         date fecha UK
         string descripcion
@@ -133,7 +133,7 @@ Evento de visita al túnel
 - Estados: Agendada, Confirmada, Completada, Cancelada
 - Registra al usuario que crea la visita
 
-### 6. **DIAININHABIL**
+### 6. **DIAINHABIL**
 Fechas cerradas para visitas
 - Reutilización del mismo día inhabilita todas las visitas
 - Cada fecha se puede registrar una sola vez
