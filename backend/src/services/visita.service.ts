@@ -378,7 +378,8 @@ export const VisitaService = {
             throw new Error(`Estado inválido. Los valores permitidos son: ${ESTADOS_VISITA.join(', ')}`);
         }
 
-        if (datos.nivel_educativo !== undefined) {
+        // Validar nivel_educativo solo cuando se envía un valor real (ignorar null/undefined)
+        if (datos.nivel_educativo != null) {
             if (visitaActual.tipo_visitante !== 'Institución') {
                 throw new Error('Solo se puede establecer el nivel educativo para visitas de tipo Institución');
             }
@@ -493,7 +494,7 @@ export const VisitaService = {
             }
 
             // ── Actualizar nivel educativo en la tabla Grupo ───────────────────
-            if (datos.nivel_educativo !== undefined && visitaActual.tipo_visitante === 'Institución') {
+            if (datos.nivel_educativo != null && visitaActual.tipo_visitante === 'Institución') {
                 await VisitaRepository.updateGrupoNivelEducativo(id, datos.nivel_educativo, client);
             }
 
