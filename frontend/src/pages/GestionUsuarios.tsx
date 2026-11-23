@@ -45,6 +45,11 @@ export const GestionUsuarios = () => {
     const [guardandoEdit, setGuardandoEdit] = useState(false);
     const [mensajeEdit, setMensajeEdit] = useState({ tipo: '', texto: '' });
 
+    const [modalPassword, setModalPassword] = useState<Usuario | null>(null);
+    const [passForm, setPassForm] = useState({ nuevaPassword: '', confirmarPassword: '' });
+    const [guardandoPass, setGuardandoPass] = useState(false);
+    const [mensajePass, setMensajePass] = useState({ tipo: '', texto: '' });
+
     const { token } = useAuth();
     const inputStyles = "w-full h-11 px-4 rounded-lg border border-outline-variant bg-surface-bright text-on-background focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none transition-all";
 
@@ -198,6 +203,46 @@ export const GestionUsuarios = () => {
         }
     };
 
+    const abrirRestablecer = (usr: Usuario) => {
+        setPassForm({ nuevaPassword: '', confirmarPassword: '' });
+        setMensajePass({ tipo: '', texto: '' });
+        setModalPassword(usr);
+    };
+
+    const cerrarRestablecer = () => {
+        setModalPassword(null);
+        setPassForm({ nuevaPassword: '', confirmarPassword: '' });
+        setMensajePass({ tipo: '', texto: '' });
+    };
+
+    const handleRestablecerPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const usuario = modalPassword;
+        if (!usuario) return;
+        if (passForm.nuevaPassword !== passForm.confirmarPassword) {
+            setMensajePass({ tipo: 'error', texto: 'Las contraseñas no coinciden.' });
+            return;
+        }
+        setGuardandoPass(true);
+        setMensajePass({ tipo: '', texto: '' });
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/${usuario.id}/restablecer-password`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ nuevaPassword: passForm.nuevaPassword }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al restablecer la contraseña');
+            cerrarRestablecer();
+            setMensajeGlobal({ tipo: 'exito', texto: `✓ Contraseña restablecida para "${usuario.nombre}".` });
+            setTimeout(() => setMensajeGlobal({ tipo: '', texto: '' }), 5000);
+        } catch (err: unknown) {
+            setMensajePass({ tipo: 'error', texto: err instanceof Error ? err.message : 'Error al restablecer la contraseña' });
+        } finally {
+            setGuardandoPass(false);
+        }
+    };
+
     const bannerCls = (tipo: string) =>
         `flex items-center gap-2 p-3 rounded-lg text-sm font-medium ${tipo === 'exito' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-error-container text-on-error-container'}`;
 
@@ -271,7 +316,7 @@ export const GestionUsuarios = () => {
                         </div>
 
                         <p className="text-xs text-on-surface-variant -mt-1">
-                            La contraseña no se modifica desde aquí. El usuario puede cambiarla desde su perfil.
+                            Para cambiar la contraseña usá el botón de restablecimiento en la lista de usuarios. El usuario también puede modificarla desde su perfil.
                         </p>
 
                         {mensajeEdit.texto && (
@@ -287,6 +332,57 @@ export const GestionUsuarios = () => {
                             <Button variant="outline" type="button" onClick={cerrarEditar}>Cancelar</Button>
                             <Button variant="primary" type="submit" disabled={guardandoEdit}>
                                 {guardandoEdit ? 'Guardando...' : 'Guardar cambios'}
+                            </Button>
+                        </div>
+                    </form>
+                </Modal>
+            )}
+
+            {modalPassword && (
+                <Modal titulo={`Restablecer contraseña — ${modalPassword.nombre}`} onClose={cerrarRestablecer}>
+                    <form onSubmit={handleRestablecerPassword} className="flex flex-col gap-4">
+                        <p className="text-xs text-on-surface-variant -mt-1">
+                            Usuario: {modalPassword.email}. La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.
+                        </p>
+                        <div>
+                            <label className="font-label-sm block mb-1">Nueva contraseña *</label>
+                            <input
+                                id="input-restablecer-password"
+                                type="password"
+                                required
+                                minLength={8}
+                                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
+                                title="Mínimo 8 caracteres, una mayúscula, una minúscula y un número"
+                                value={passForm.nuevaPassword}
+                                onChange={e => setPassForm({ ...passForm, nuevaPassword: e.target.value })}
+                                className={inputStyles}
+                                placeholder="Mínimo 8 caracteres"
+                            />
+                        </div>
+                        <div>
+                            <label className="font-label-sm block mb-1">Repetir contraseña *</label>
+                            <input
+                                id="input-restablecer-confirmar"
+                                type="password"
+                                required
+                                value={passForm.confirmarPassword}
+                                onChange={e => setPassForm({ ...passForm, confirmarPassword: e.target.value })}
+                                className={inputStyles}
+                                placeholder="Repita la contraseña"
+                            />
+                        </div>
+                        {mensajePass.texto && (
+                            <div className={bannerCls(mensajePass.tipo)}>
+                                <span className="material-symbols-outlined text-[16px] shrink-0">
+                                    {mensajePass.tipo === 'exito' ? 'check_circle' : 'error'}
+                                </span>
+                                {mensajePass.texto}
+                            </div>
+                        )}
+                        <div className="flex gap-3 justify-end pt-2">
+                            <Button variant="outline" type="button" onClick={cerrarRestablecer}>Cancelar</Button>
+                            <Button variant="primary" type="submit" disabled={guardandoPass}>
+                                {guardandoPass ? 'Guardando...' : 'Restablecer contraseña'}
                             </Button>
                         </div>
                     </form>
@@ -413,6 +509,15 @@ export const GestionUsuarios = () => {
                                                         className="p-2 hover:bg-secondary/10 rounded-lg text-secondary transition-colors"
                                                     >
                                                         <span className="material-symbols-outlined text-[18px]">edit</span>
+                                                    </button>
+
+                                                    <button
+                                                        id={`btn-restablecer-password-${usr.id}`}
+                                                        onClick={() => abrirRestablecer(usr)}
+                                                        title="Restablecer contraseña"
+                                                        className="p-2 hover:bg-primary/10 rounded-lg text-primary transition-colors"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">lock_reset</span>
                                                     </button>
 
                                                     {/* Desactivar (solo si está activo) */}

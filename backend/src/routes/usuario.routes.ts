@@ -240,6 +240,49 @@ router.put('/:id/password', verificarToken, UsuarioController.cambiarPassword);
 
 /**
  * @openapi
+ * /api/usuarios/{id}/restablecer-password:
+ *   put:
+ *     summary: Restablecer la contraseña de un usuario (Admin)
+ *     description: Establece una nueva contraseña para cualquier usuario sin necesidad de conocer la anterior. Requiere rol de Administrador.
+ *     tags:
+ *       - Usuarios
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nuevaPassword
+ *             properties:
+ *               nuevaPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: NuevaClave123
+ *     responses:
+ *       200:
+ *         description: Contraseña restablecida correctamente.
+ *       400:
+ *         description: Contraseña inválida o igual a la actual.
+ *       401:
+ *         description: No autorizado.
+ *       403:
+ *         description: Prohibido (requiere rol Admin).
+ *       404:
+ *         description: Usuario no encontrado.
+ */
+router.put('/:id/restablecer-password', verificarToken, verificarRol(['Admin']), UsuarioController.restablecerPassword);
+
+/**
+ * @openapi
  * /api/usuarios/{id}/perfil:
  *   get:
  *     summary: Obtener el perfil del usuario autenticado

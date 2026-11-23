@@ -298,5 +298,40 @@ export const UsuarioService = {
         } finally {
             client.release();
         }
+    },
+
+    async restablecerPassword(usuarioId: string, nuevaPassword: string, usuarioSolicitanteId: string) {
+        const result = await pool.query('SELECT nombre, password_hash FROM Usuario WHERE id = $1', [usuarioId]);
+        const usuario = result.rows[0];
+        if (!usuario) throw new Error('Usuario no encontrado');
+
+        const passwordResult = validarPassword(nuevaPassword);
+        if (!passwordResult.valida) {
+            throw new Error(passwordResult.mensaje);
+        }
+
+        const esIgual = await bcrypt.compare(nuevaPassword, usuario.password_hash);
+        if (esIgual) {
+            throw new Error('La nueva contraseña debe ser diferente a la actual');
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(nuevaPassword, salt);
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            await client.query('UPDATE Usuario SET password_hash = $1 WHERE id = $2', [hash, usuarioId]);
+            await client.query(
+                `INSERT INTO LogAuditoria (usuario_id, accion) VALUES ($1, $2)`,
+                [usuarioSolicitanteId, `Restableció la contraseña del usuario "${usuario.nombre}"`]
+            );
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 };

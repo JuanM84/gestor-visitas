@@ -90,6 +90,21 @@ export const UsuarioController = {
         }
     },
 
+    async restablecerPassword(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const { nuevaPassword } = req.body;
+            if (!nuevaPassword) {
+                return res.status(400).json({ error: 'La nueva contraseña es obligatoria.' });
+            }
+            await UsuarioService.restablecerPassword(String(id), nuevaPassword, req.usuario.id);
+            res.status(200).json({ mensaje: 'Contraseña restablecida correctamente.' });
+        } catch (error: any) {
+            const status = error.message.includes('no encontrado') ? 404 : 400;
+            res.status(status).json({ error: error.message });
+        }
+    },
+
     // Obtener perfil propio
     async obtenerPerfil(req: AuthRequest, res: Response) {
         try {
